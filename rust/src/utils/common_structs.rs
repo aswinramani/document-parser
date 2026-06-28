@@ -10,6 +10,7 @@ pub struct EffectiveTime {
   pub low: Option<String>,
   pub high:  Option<String>,
   pub null_flavor: Option<String>,
+  pub value: Option<String>,
 }
 
 pub struct BaseIdentifier {
@@ -18,7 +19,7 @@ pub struct BaseIdentifier {
 }
 
 pub struct PatientIdentifier {
-  pub base_id: BaseIdentifier,
+  pub base_id: Option<BaseIdentifier>,
   pub assigning_authority_name: Option<String>,
 }
 
@@ -70,4 +71,19 @@ pub struct Author {
   pub time: Option<String>,
   pub addresses: Vec<Address>,
   pub telecoms: Vec<Telecom>,
+}
+
+pub struct DocumentMetadata {
+  pub type_id: Option<BaseIdentifier>,
+  pub template_ids: Vec<BaseIdentifier>,
+  pub id: Option<BaseIdentifier>,
+  pub code: Option<Code>,
+  pub title: Option<String>,
+  pub effective_time: Option<EffectiveTime>,
+  pub confidentiality_code: Option<Code>,
+  pub language_code: Option<String>,
+  pub version_number: Option<String>,
+  pub realm_code: Option<String>,
+  pub authors: Vec<Author>,
+  pub custodian: Option<Organization>,
 }
