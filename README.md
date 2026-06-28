@@ -1,4 +1,4 @@
-Clinical Document Parser
+Document Parser
 
-I am trying to build a document parser using rust, kotlin and typescript for learning and benchmarking.
+I am trying to build a xml parser for cda and json parser fhir using rust, kotlin and typescript for learning and benchmarking.
 
