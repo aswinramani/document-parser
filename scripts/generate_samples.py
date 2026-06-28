@@ -3,7 +3,7 @@
 Generate sample C-CDA XML documents for parser testing and benchmarking.
 
 Usage:
-    python generate_samples.py --mode clear # clears all docs
+    python generate_samples.py --mode clear    # clears all docs
     python generate_samples.py --mode test     # ~10 varied documents for parser testing
     python generate_samples.py --mode bench    # 10,000 documents for benchmarking
     python generate_samples.py --mode bench --count 1000 --output path/to/dir
