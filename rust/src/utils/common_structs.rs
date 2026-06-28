@@ -1,0 +1,73 @@
+pub struct Code {
+  pub code: Option<String>,
+  pub display_name: Option<String>,
+  pub code_system: Option<String>,
+  pub code_system_name: Option<String>,
+  pub null_flavor: Option<String>,
+}
+
+pub struct EffectiveTime {
+  pub low: Option<String>,
+  pub high:  Option<String>,
+  pub null_flavor: Option<String>,
+}
+
+pub struct BaseIdentifier {
+  pub root: Option<String>,
+  pub extension: Option<String>,
+}
+
+pub struct PatientIdentifier {
+  pub base_id: BaseIdentifier,
+  pub assigning_authority_name: Option<String>,
+}
+
+pub struct PersonName {
+  pub prefix: Option<String>,
+  pub suffix: Option<String>,
+  pub family: Option<String>,
+  pub name_use: Option<String>,
+  pub given: Vec<String>,
+}
+
+pub struct Address {
+  pub address_use: Option<String>,
+  pub street_address_line: Vec<String>,
+  pub city: Option<String>,
+  pub state: Option<String>,
+  pub postal_code: Option<String>,
+  pub country: Option<String>,
+}
+
+pub struct Telecom {
+  pub telecom_use: Option<String>,
+  pub value: Option<String>,
+}
+
+pub struct Patient {
+  pub ids: Vec<PatientIdentifier>,
+  pub names: Vec<PersonName>,
+  pub gender: Option<Code>,
+  pub dob: Option<String>,
+  pub addresses: Vec<Address>,
+  pub telecoms: Vec<Telecom>,
+  pub marital_status: Option<Code>,
+  pub race: Option<Code>,
+  pub ethnicity: Option<Code>,
+}
+
+pub struct Organization {
+  pub ids: Vec<BaseIdentifier>,
+  pub name: Option<String>,
+  pub telecoms: Vec<Telecom>,
+  pub addresses: Vec<Address>,
+}
+
+pub struct Author {
+  pub ids: Vec<BaseIdentifier>,
+  pub names: Vec<PersonName>,
+  pub organization: Option<Organization>,
+  pub time: Option<String>,
+  pub addresses: Vec<Address>,
+  pub telecoms: Vec<Telecom>,
+}

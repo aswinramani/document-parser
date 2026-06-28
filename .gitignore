@@ -1,0 +1,4 @@
+kotlin/.idea/*
+rust/target/debug/*
+rust/target/.rustc_info.json
+rust/target/CACHEDIR.TAG
