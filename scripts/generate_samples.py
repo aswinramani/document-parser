@@ -3,6 +3,7 @@
 Generate sample C-CDA XML documents for parser testing and benchmarking.
 
 Usage:
+    python generate_samples.py --mode clear # clears all docs
     python generate_samples.py --mode test     # ~10 varied documents for parser testing
     python generate_samples.py --mode bench    # 10,000 documents for benchmarking
     python generate_samples.py --mode bench --count 1000 --output path/to/dir
@@ -399,19 +400,29 @@ def generate_bench_documents(output_dir, count):
 # Entry point
 # ---------------------------------------------------------------------------
 
+def clear_directory(output_dir):
+    if not os.path.exists(output_dir):
+        print(f"Nothing to clear — {output_dir} does not exist")
+        return
+    files = [f for f in os.listdir(output_dir) if f.endswith(".xml")]
+    for f in files:
+        os.remove(os.path.join(output_dir, f))
+    print(f"Cleared {len(files)} XML files from {output_dir}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate sample C-CDA XML documents")
-    parser.add_argument("--mode", choices=["test", "bench"], default="test",
-                        help="test: varied documents for parser dev | bench: bulk for benchmarking")
+    parser.add_argument("--mode", choices=["test", "bench", "clear"], default="test",
+                        help="test: varied documents | bench: bulk for benchmarking | clear: delete generated files")
     parser.add_argument("--count", type=int, default=10000,
                         help="number of documents for bench mode (default: 10000)")
     parser.add_argument("--output", type=str, default=None,
-                        help="output directory (default: sample-documents/test or benchmarks/samples)")
+                        help="output directory (default: sample-documents/generated or benchmarks/samples)")
     args = parser.parse_args()
 
     if args.output:
         output_dir = args.output
-    elif args.mode == "test":
+    elif args.mode in ("test", "clear"):
         output_dir = os.path.join(os.path.dirname(__file__), "..", "sample-documents", "generated")
     else:
         output_dir = os.path.join(os.path.dirname(__file__), "..", "benchmarks", "samples")
@@ -421,8 +432,10 @@ def main():
 
     if args.mode == "test":
         generate_test_documents(output_dir)
-    else:
+    elif args.mode == "bench":
         generate_bench_documents(output_dir, args.count)
+    else:
+        clear_directory(output_dir)
 
 
 if __name__ == "__main__":
