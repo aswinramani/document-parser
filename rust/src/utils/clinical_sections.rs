@@ -1,12 +1,20 @@
 use crate::utils::common_structs::{Address, Author, BaseIdentifier, Code, EffectiveTime, PersonName, Telecom, Reference};
 
+pub struct Section {
+    pub template_ids: Vec<BaseIdentifier>,
+    pub code: Option<Code>,
+    pub title: Option<String>,
+    pub text: Option<String>,
+    pub entries: Vec<Entry>,
+}
+
 pub struct Entry {
     pub template_ids: Vec<BaseIdentifier>,
     pub id: Option<BaseIdentifier>,
     pub code: Option<Code>,
     pub status_code: Option<String>,
     pub effective_time: Option<EffectiveTime>,
-    pub entry_relationship: Option<EntryRelationship>,
+    pub entry_relationship: Vec<EntryRelationship>,
 }
 
 pub struct EntryRelationship {
