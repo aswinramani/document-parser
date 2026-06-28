@@ -1,4 +1,14 @@
-kotlin/.idea/*
-rust/target/debug/*
-rust/target/.rustc_info.json
-rust/target/CACHEDIR.TAG
+# Rust
+rust/target/
+
+# Kotlin
+kotlin/.idea/
+kotlin/build/
+kotlin/.gradle/
+
+# TypeScript
+typescript/node_modules/
+typescript/dist/
+
+# OS
+.DS_Store
