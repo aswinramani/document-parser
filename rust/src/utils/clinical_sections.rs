@@ -9,12 +9,29 @@ pub struct Section {
 }
 
 pub struct Entry {
+    pub clinical_statement: Option<ClinicalStatement>,
+}
+
+pub enum ClinicalStatement {
+    EntryAct(EntryAct),
+    // EntryObservation(EntryObservation),
+    // SubstanceAdministration(SubstanceAdministration),
+    // Procedure(Procedure),
+}
+
+pub struct EntryAct {
+    pub class_code: Option<String>,
+    pub mood_code: Option<String>,
+    pub act_body: Option<ActBody>, 
+}
+
+pub struct ActBody {
     pub template_ids: Vec<BaseIdentifier>,
     pub id: Option<BaseIdentifier>,
     pub code: Option<Code>,
     pub status_code: Option<String>,
     pub effective_time: Option<EffectiveTime>,
-    pub entry_relationship: Vec<EntryRelationship>,
+    pub entry_relationships: Vec<EntryRelationship>,
 }
 
 pub struct EntryRelationship {
@@ -36,8 +53,6 @@ pub struct Observation {
 }
 
 pub struct Value {
-    pub code: Option<Code> ,
+    pub code: Option<Code>,
     pub original_text: Option<Reference>,
 }
-
-
