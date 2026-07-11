@@ -4,7 +4,7 @@ use std::io::BufReader;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use crate::utils::clinical_sections::Section;
-use crate::utils::common_structs::{BaseIdentifier};
+use crate::utils::common_structs::{BaseIdentifier, Code};
 
 #[derive(Debug, PartialEq)]
 enum ParseState {
@@ -61,26 +61,44 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             let root = e.try_get_attribute(b"root")
                                 .unwrap()
                                 .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            println!("InSection > templateId root => {:?}", root);
+                            // println!("InSection > templateId root => {:?}", root);
                             let extension = e.try_get_attribute(b"extension")
                                 .unwrap()
                                 .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            println!("InSection > templateId extension => {:?}", extension);
+                            // println!("InSection > templateId extension => {:?}", extension);
                             let template_id = BaseIdentifier {
-                                root: root,
-                                extension: extension,
+                                root,
+                                extension,
                             };
                             section.template_ids.push(template_id);
                         }
                         b"code" => {
-                            let code = e.try_get_attribute(b"code");
-                            println!("code => InSection {:?}", code);
-                            let code_system = e.try_get_attribute(b"codeSystem");
-                            println!("codeSystem => InSection {:?}", code_system);
-                            let display_name = e.try_get_attribute(b"displayName");
-                            println!("displayName => InSection {:?}", display_name);
-                            let code_system_name = e.try_get_attribute(b"codeSystemName");
-                            println!("codeSystemName => InSection {:?}", code_system_name);
+                            let code = e.try_get_attribute(b"code")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let code_system = e.try_get_attribute(b"codeSystem")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let display_name = e.try_get_attribute(b"displayName")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let code_system_name = e.try_get_attribute(b"codeSystemName")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let null_flavor = e.try_get_attribute(b"nullFlavor")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            println!("InSection > code: code {:?}", code);
+                            section.code = Some(Code{
+                                code,
+                                code_system,
+                                display_name,
+                                code_system_name,
+                                null_flavor,
+                                translations: Vec::new(),
+                                xsi_type: None,
+                            });
+
                         }
                         _ => {}
                     }
@@ -103,6 +121,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
         }
         buf.clear();
     }
+    println!("section.template_ids {:?}", section.template_ids);
+    println!("section.code {:?}", section.code);
     return section;
     // todo!()
 }

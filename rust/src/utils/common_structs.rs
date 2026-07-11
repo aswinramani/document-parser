@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Code {
     pub code: Option<String>,
     pub display_name: Option<String>,
@@ -7,7 +8,7 @@ pub struct Code {
     pub xsi_type: Option<String>,
     pub translations: Vec<Translation>,
 }
-
+#[derive(Debug)]
 pub struct Translation {
     pub xsi_type: Option<String>,
     pub code: Option<String>,
@@ -24,6 +25,7 @@ pub struct EffectiveTime {
     pub value: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct BaseIdentifier {
     pub root: Option<String>,
     pub extension: Option<String>,
