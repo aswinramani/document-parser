@@ -9,6 +9,8 @@ use crate::utils::clinical_sections::Section;
 enum ParseState {
     Root,
     InSection,
+    InEntry,
+    InAct,
 }
 
 pub fn problem_section(file_path_str: &str) -> Section {
@@ -18,6 +20,13 @@ pub fn problem_section(file_path_str: &str) -> Section {
     let mut xml = Reader::from_reader(reader);
     let mut buf = Vec::new();
     let mut state = ParseState::Root;
+    let mut section = Section {
+        template_ids: Vec::new(),
+        code: None,
+        title: None,
+        text: None,
+        entries: Vec::new(),
+    };
 
     loop {
         match xml.read_event_into(&mut buf) {
@@ -28,6 +37,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 // println!("event start name {:?}", e.name());
                 match e.name().as_ref() {
                     b"section" => state = ParseState::InSection,
+                    b"entry" => state = ParseState::InEntry,
+                    b"act" => state = ParseState::InAct,
                     _ => {}
                 }
             }
@@ -36,6 +47,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 // println!("event end name {:?}", e.name());
                 match e.name().as_ref() {
                     b"section" => state = ParseState::Root,
+                    b"entry" => state = ParseState::InSection,
+                    b"act" => state = ParseState::InEntry,
                     _ => {}
                 }
             }
@@ -45,11 +58,32 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     match e.name().as_ref() {
                         b"templateId" => {
                             let root = e.try_get_attribute(b"root");
-                            println!("templateId => root {:?}", root); 
+                            println!("templateId => InSection {:?}", root);
+                        }
+                        b"code" => {
+                            let code = e.try_get_attribute(b"code");
+                            println!("code => InSection {:?}", code);
+                            let code_system = e.try_get_attribute(b"codeSystem");
+                            println!("codeSystem => InSection {:?}", code_system);
+                            let display_name = e.try_get_attribute(b"displayName");
+                            println!("displayName => InSection {:?}", display_name);
+                            let code_system_name = e.try_get_attribute(b"codeSystemName");
+                            println!("codeSystemName => InSection {:?}", code_system_name);
                         }
                         _ => {}
                     }
                 }
+                // if state == ParseState::InEntry {
+                //     match e.name().as_ref() {
+                //         b"act" => {
+                //             let class_code = e.try_get_attribute(b"classCode");
+                //             println!("classCode => InEntry {:?} ", class_code);
+                //             let mood_code = e.try_get_attribute(b"moodCode");
+                //             println!("moodCode => InEntry {:?} ", mood_code);
+                //         }
+                //         _ => {}
+                //     }
+                // }
             }
             Ok(Event::Eof) => break,
             // skip other events
@@ -57,13 +91,6 @@ pub fn problem_section(file_path_str: &str) -> Section {
         }
         buf.clear();
     }
-    Section {
-        template_ids: Vec::new(),
-        code: None,
-        title: None,
-        text: None,
-        entries: Vec::new(),
-    }
-
+    return section;
     // todo!()
 }
