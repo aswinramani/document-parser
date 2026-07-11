@@ -4,6 +4,7 @@ use std::io::BufReader;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use crate::utils::clinical_sections::Section;
+use crate::utils::common_structs::{BaseIdentifier};
 
 #[derive(Debug, PartialEq)]
 enum ParseState {
@@ -57,8 +58,19 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 if state == ParseState::InSection {
                     match e.name().as_ref() {
                         b"templateId" => {
-                            let root = e.try_get_attribute(b"root");
-                            println!("templateId => InSection {:?}", root);
+                            let root = e.try_get_attribute(b"root")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            println!("InSection > templateId root => {:?}", root);
+                            let extension = e.try_get_attribute(b"extension")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            println!("InSection > templateId extension => {:?}", extension);
+                            let template_id = BaseIdentifier {
+                                root: root,
+                                extension: extension,
+                            };
+                            section.template_ids.push(template_id);
                         }
                         b"code" => {
                             let code = e.try_get_attribute(b"code");
