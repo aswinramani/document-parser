@@ -20,11 +20,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
       - name: Verify Compilation and Lint Using Clippy
         run: |
           cargo clippy
         working-directory: ./rust
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
