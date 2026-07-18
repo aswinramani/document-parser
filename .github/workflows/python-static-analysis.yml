@@ -1,0 +1,31 @@
+name: Python Static Analysis
+
+on:
+  push:
+    branches: [ main, 'feat/**', 'fix/**', 'chore/**' ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 5'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+
+    strategy:
+      matrix:
+        language: [ 'python' ]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      - name: Verify and Lint Using Ruff
+        run: |
+          python -m py_compile scripts/generate_samples.py
+          pip install ruff
+          ruff check scripts/
+      - uses: github/codeql-action/analyze@v3

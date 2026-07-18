@@ -1,0 +1,30 @@
+name: Rust Static Analysis
+
+on:
+  push:
+    branches: [ main, 'feat/**', 'fix/**', 'chore/**' ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 5'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+
+    strategy:
+      matrix:
+        language: [ 'rust' ]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      - name: Verify Compilation and Lint Using Clippy
+        run: |
+          cargo clippy
+        working-directory: ./rust
+      - uses: github/codeql-action/analyze@v3
