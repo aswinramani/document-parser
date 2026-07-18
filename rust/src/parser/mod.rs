@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::BufReader;
 use quick_xml::Reader;
 use quick_xml::events::Event;
-use crate::utils::clinical_sections::Section;
+use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct};
 use crate::utils::common_structs::{BaseIdentifier, Code};
 
 #[derive(Debug, PartialEq)]
@@ -28,7 +28,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
         text: None,
         entries: Vec::new(),
     };
-
+    let mut current_entry: Option<Entry> = None;
+    let mut current_act: Option<EntryAct> = None;
     loop {
         match xml.read_event_into(&mut buf) {
             // for error handling
@@ -38,8 +39,26 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 // println!("event start name {:?}", e.name());
                 match e.name().as_ref() {
                     b"section" => state = ParseState::InSection,
-                    b"entry" => state = ParseState::InEntry,
-                    b"act" => state = ParseState::InAct,
+                    b"entry" => {
+                        state = ParseState::InEntry;
+                        current_entry = Some(Entry {
+                            clinical_statement: None
+                        })
+                    }
+                    b"act" => {
+                        state = ParseState::InAct;
+                        let class_code = e.try_get_attribute(b"classCode")
+                            .unwrap()
+                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                        let mood_code = e.try_get_attribute(b"moodCode")
+                            .unwrap()
+                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                        current_act = Some(EntryAct {
+                            class_code,
+                            mood_code,
+                            act_body: None
+                        });
+                    }
                     _ => {}
                 }
             }
@@ -48,8 +67,20 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 // println!("event end name {:?}", e.name());
                 match e.name().as_ref() {
                     b"section" => state = ParseState::Root,
-                    b"entry" => state = ParseState::InSection,
-                    b"act" => state = ParseState::InEntry,
+                    b"entry" => {
+                        state = ParseState::InSection;
+                        if let Some(entry) = current_entry.take() {
+                            section.entries.push(entry);
+                        }
+                    }
+                    b"act" =>{ 
+                        state = ParseState::InEntry;
+                        if let Some(entry) = &mut current_entry {
+                            entry.clinical_statement = Some(ClinicalStatement::EntryAct(
+                                current_act.take().unwrap()
+                            ));
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -123,6 +154,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
     }
     println!("section.template_ids {:?}", section.template_ids);
     println!("section.code {:?}", section.code);
+    println!("section.entries {:?}", section.entries);
     return section;
     // todo!()
 }

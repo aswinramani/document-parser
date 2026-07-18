@@ -8,10 +8,12 @@ pub struct Section {
     pub entries: Vec<Entry>,
 }
 
+#[derive(Debug)]
 pub struct Entry {
     pub clinical_statement: Option<ClinicalStatement>,
 }
 
+#[derive(Debug)]
 pub enum ClinicalStatement {
     EntryAct(EntryAct),
     // EntryObservation(EntryObservation),
@@ -19,12 +21,14 @@ pub enum ClinicalStatement {
     // Procedure(Procedure),
 }
 
+#[derive(Debug)]
 pub struct EntryAct {
     pub class_code: Option<String>,
     pub mood_code: Option<String>,
     pub act_body: Option<ActBody>, 
 }
 
+#[derive(Debug)]
 pub struct ActBody {
     pub template_ids: Vec<BaseIdentifier>,
     pub id: Option<BaseIdentifier>,
@@ -34,11 +38,13 @@ pub struct ActBody {
     pub entry_relationships: Vec<EntryRelationship>,
 }
 
+#[derive(Debug)]
 pub struct EntryRelationship {
     pub type_code: Option<String>,
     pub observation: Option<Observation>,
 }
 
+#[derive(Debug)]
 pub struct Observation {
     pub class_code: Option<String>,
     pub mood_code: Option<String>,
@@ -52,6 +58,7 @@ pub struct Observation {
     pub author: Option<Author>,
 }
 
+#[derive(Debug)]
 pub struct Value {
     pub code: Option<Code>,
     pub original_text: Option<Reference>,

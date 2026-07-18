@@ -17,7 +17,7 @@ pub struct Translation {
     pub code_system_name: Option<String>,
     pub null_flavor: Option<String>,
 }
-
+#[derive(Debug)]
 pub struct EffectiveTime {
     pub low: Option<String>,
     pub high: Option<String>,
@@ -36,6 +36,7 @@ pub struct PatientIdentifier {
     pub assigning_authority_name: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct PersonName {
     pub prefix: Option<String>,
     pub suffix: Option<String>,
@@ -44,6 +45,7 @@ pub struct PersonName {
     pub given: Vec<String>,
 }
 
+#[derive(Debug)]
 pub struct Address {
     pub address_use: Option<String>,
     pub street_address_line: Vec<String>,
@@ -53,6 +55,7 @@ pub struct Address {
     pub country: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct Telecom {
     pub telecom_use: Option<String>,
     pub value: Option<String>,
@@ -76,13 +79,13 @@ pub struct Organization {
     pub telecoms: Vec<Telecom>,
     pub addresses: Vec<Address>,
 }
-
+#[derive(Debug)]
 pub struct Author {
     pub template_id: Option<BaseIdentifier>,
     pub time: Option<EffectiveTime>,
     pub assigned_author: Option<AssignedAuthor>,
 }
-
+#[derive(Debug)]
 pub struct AssignedAuthor {
     pub id: Option<BaseIdentifier>,
     pub code: Option<Code>,
@@ -105,7 +108,7 @@ pub struct DocumentMetadata {
     pub authors: Vec<Author>,
     pub custodian: Option<Organization>,
 }
-
+#[derive(Debug)]
 pub struct Reference {
     pub value: Option<String>,
 }
