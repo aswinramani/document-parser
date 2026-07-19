@@ -13,3 +13,7 @@ typescript/dist/
 # OS
 .DS_Store
 sample-documents/generated/
+scripts/__pycache__/**
+
+# Env
+.env

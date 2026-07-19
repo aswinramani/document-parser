@@ -20,12 +20,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
       - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
+      - name: Install dependencies
+        run: uv pip install --system -r scripts/requirements.txt ruff
       - name: Verify and Lint Using Ruff
         run: |
           python -m py_compile scripts/generate_samples.py
-          pip install ruff
           ruff check scripts/
       - uses: github/codeql-action/analyze@v4
