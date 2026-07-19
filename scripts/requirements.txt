@@ -1,2 +1,2 @@
-cryptography==44.0.2
-python-dotenv==1.0.1
+cryptography==49.0.0
+python-dotenv==1.2.2
