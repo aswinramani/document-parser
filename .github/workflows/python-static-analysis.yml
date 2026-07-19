@@ -2,7 +2,7 @@ name: Python Static Analysis
 
 on:
   push:
-    branches: [ main, 'feat/**', 'fix/**', 'chore/**' ]
+    branches: [ main, 'feat/**', 'fix/**', 'chore/**', 'dependabot/**' ]
   pull_request:
     branches: [ main ]
   schedule:
