@@ -7,6 +7,12 @@ Usage:
     python generate_samples.py --mode test     # ~10 varied documents for parser testing
     python generate_samples.py --mode bench    # 10,000 documents for benchmarking
     python generate_samples.py --mode bench --count 1000 --output path/to/dir
+    python generate_samples.py --mode test --encrypt      # encrypt documents before writing
+    python generate_samples.py --mode decrypt              # decrypt a directory of .xml.enc files
+
+Encryption (--encrypt / --mode decrypt) requires the SAMPLE_DOC_ENCRYPTION_KEY
+environment variable to hold a Fernet key. Generate one with:
+    python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 """
 
 import random
@@ -14,6 +20,9 @@ import uuid
 import argparse
 import os
 from datetime import datetime, timedelta
+
+from cryptography.fernet import Fernet
+from dotenv import load_dotenv
 
 # ---------------------------------------------------------------------------
 # Data pools
@@ -339,10 +348,35 @@ def generate_document(sections=None):
 
 
 # ---------------------------------------------------------------------------
+# Encryption
+# ---------------------------------------------------------------------------
+
+def get_fernet():
+    key = os.environ.get("SAMPLE_DOC_ENCRYPTION_KEY")
+    if not key:
+        raise SystemExit(
+            "SAMPLE_DOC_ENCRYPTION_KEY is not set. Generate one with:\n"
+            '  python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
+        )
+    return Fernet(key.encode())
+
+
+def write_document(path, content, fernet):
+    if fernet:
+        path += ".enc"
+        data = fernet.encrypt(content.encode("utf-8"))
+    else:
+        data = content.encode("utf-8")
+    with open(path, "wb") as f:
+        f.write(data)  # lgtm[py/clear-text-storage-sensitive-data] -- fabricated test-fixture data, not real PHI
+    return path
+
+
+# ---------------------------------------------------------------------------
 # Modes
 # ---------------------------------------------------------------------------
 
-def generate_test_documents(output_dir):
+def generate_test_documents(output_dir, fernet=None):
     docs = [
         ("active_problem.xml",   generate_document([problems_section("active")])),
         ("resolved_problem.xml", generate_document([problems_section("resolved")])),
@@ -364,15 +398,13 @@ def generate_test_documents(output_dir):
 
     os.makedirs(output_dir, exist_ok=True)
     for filename, content in docs:
-        path = os.path.join(output_dir, filename)
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content)
+        path = write_document(os.path.join(output_dir, filename), content, fernet)
         print(f"  wrote {path}")
 
     print(f"\nGenerated {len(docs)} test documents in {output_dir}")
 
 
-def generate_bench_documents(output_dir, count):
+def generate_bench_documents(output_dir, count, fernet=None):
     os.makedirs(output_dir, exist_ok=True)
     section_builders = [
         lambda: problems_section("active"),
@@ -386,9 +418,7 @@ def generate_bench_documents(output_dir, count):
         num_sections = random.randint(1, 3)
         sections = [random.choice(section_builders)() for _ in range(num_sections)]
         content = generate_document(sections)
-        path = os.path.join(output_dir, f"doc_{i:06d}.xml")
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content)
+        write_document(os.path.join(output_dir, f"doc_{i:06d}.xml"), content, fernet)
 
         if (i + 1) % 1000 == 0:
             print(f"  {i + 1}/{count} documents written...")
@@ -404,25 +434,47 @@ def clear_directory(output_dir):
     if not os.path.exists(output_dir):
         print(f"Nothing to clear — {output_dir} does not exist")
         return
-    files = [f for f in os.listdir(output_dir) if f.endswith(".xml")]
+    files = [f for f in os.listdir(output_dir) if f.endswith(".xml") or f.endswith(".xml.enc")]
     for f in files:
         os.remove(os.path.join(output_dir, f))
-    print(f"Cleared {len(files)} XML files from {output_dir}")
+    print(f"Cleared {len(files)} files from {output_dir}")
+
+
+def decrypt_documents(output_dir, fernet):
+    if not os.path.exists(output_dir):
+        print(f"Nothing to decrypt — {output_dir} does not exist")
+        return
+    files = [f for f in os.listdir(output_dir) if f.endswith(".xml.enc")]
+    for f in files:
+        enc_path = os.path.join(output_dir, f)
+        with open(enc_path, "rb") as fh:
+            plaintext = fernet.decrypt(fh.read())
+        out_path = enc_path[: -len(".enc")]
+        with open(out_path, "wb") as fh:
+            fh.write(plaintext)
+        print(f"  decrypted {out_path}")
+
+    print(f"\nDecrypted {len(files)} documents in {output_dir}")
 
 
 def main():
+    load_dotenv()
+
     parser = argparse.ArgumentParser(description="Generate sample C-CDA XML documents")
-    parser.add_argument("--mode", choices=["test", "bench", "clear"], default="test",
-                        help="test: varied documents | bench: bulk for benchmarking | clear: delete generated files")
+    parser.add_argument("--mode", choices=["test", "bench", "clear", "decrypt"], default="test",
+                        help="test: varied documents | bench: bulk for benchmarking | "
+                             "clear: delete generated files | decrypt: decrypt .xml.enc files in place")
     parser.add_argument("--count", type=int, default=10000,
                         help="number of documents for bench mode (default: 10000)")
     parser.add_argument("--output", type=str, default=None,
                         help="output directory (default: sample-documents/generated or benchmarks/samples)")
+    parser.add_argument("--encrypt", action="store_true",
+                        help="encrypt documents in memory before writing (requires SAMPLE_DOC_ENCRYPTION_KEY)")
     args = parser.parse_args()
 
     if args.output:
         output_dir = args.output
-    elif args.mode in ("test", "clear"):
+    elif args.mode in ("test", "clear", "decrypt"):
         output_dir = os.path.join(os.path.dirname(__file__), "..", "sample-documents", "generated")
     else:
         output_dir = os.path.join(os.path.dirname(__file__), "..", "benchmarks", "samples")
@@ -430,10 +482,14 @@ def main():
     print(f"Mode: {args.mode}")
     print(f"Output: {output_dir}")
 
+    fernet = get_fernet() if (args.encrypt or args.mode == "decrypt") else None
+
     if args.mode == "test":
-        generate_test_documents(output_dir)
+        generate_test_documents(output_dir, fernet)
     elif args.mode == "bench":
-        generate_bench_documents(output_dir, args.count)
+        generate_bench_documents(output_dir, args.count, fernet)
+    elif args.mode == "decrypt":
+        decrypt_documents(output_dir, fernet)
     else:
         clear_directory(output_dir)
 
