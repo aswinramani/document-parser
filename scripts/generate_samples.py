@@ -368,7 +368,7 @@ def write_document(path, content, fernet):
     else:
         data = content.encode("utf-8")
     with open(path, "wb") as f:
-        f.write(data)
+        f.write(data)  # lgtm[py/clear-text-storage-sensitive-data] -- fabricated test-fixture data, not real PHI
     return path
 
 
