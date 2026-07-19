@@ -25,9 +25,11 @@ jobs:
         with:
           languages: ${{ matrix.language }}
       - name: Install dependencies
-        run: uv pip install --system -r scripts/requirements.txt ruff
+        run: |
+          uv venv
+          uv pip install --python .venv/bin/python -r scripts/requirements.txt ruff
       - name: Verify and Lint Using Ruff
         run: |
-          python -m py_compile scripts/generate_samples.py
-          ruff check scripts/
+          .venv/bin/python -m py_compile scripts/generate_samples.py
+          .venv/bin/ruff check scripts/
       - uses: github/codeql-action/analyze@v4
