@@ -4,7 +4,7 @@ use std::io::BufReader;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody};
-use crate::utils::common_structs::{BaseIdentifier, Code};
+use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime};
 
 #[derive(Debug, PartialEq)]
 enum ParseState {
@@ -12,6 +12,7 @@ enum ParseState {
     InSection,
     InEntry,
     InAct,
+    InEffectiveTime,
     InEntryRelationship,
     InAuthor,
 }
@@ -32,6 +33,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
     };
     let mut current_entry: Option<Entry> = None;
     let mut current_act: Option<EntryAct> = None;
+    let mut current_effective_time: Option<EffectiveTime> = None;
     loop {
         match xml.read_event_into(&mut buf) {
             // for error handling
@@ -67,6 +69,21 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             })
                         });
                     }
+                    b"effectiveTime" => {
+                        state = ParseState::InEffectiveTime;
+                        let null_flavor = e.try_get_attribute(b"nullFlavor")
+                            .unwrap()
+                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                        let value = e.try_get_attribute(b"value")
+                            .unwrap()
+                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                        current_effective_time = Some(EffectiveTime {
+                            null_flavor,
+                            value,
+                            low: None,
+                            high: None,
+                        });
+                    }
                     b"entryRelationship" => state = ParseState::InEntryRelationship,
                     b"author" => state = ParseState::InAuthor,
                     _ => {}
@@ -91,6 +108,14 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             ));
                         }
                     }
+                    b"effectiveTime" => {
+                        state = ParseState::InAct;
+                        if let Some(act) = &mut current_act {
+                                if let Some(body) = &mut act.act_body {
+                                    body.effective_time = current_effective_time.take();
+                                }
+                            }
+                    },
                     b"entryRelationship" => state = ParseState::InAct,
                     b"author" => state = ParseState::InEntryRelationship,
                     _ => {}
@@ -226,6 +251,31 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             if let Some(act) = &mut current_act {
                                 if let Some(body) = &mut act.act_body {
                                     body.status_code = code;
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                if state == ParseState::InEffectiveTime {
+                    match e.name().as_ref() {
+                        b"low" => {
+                            let low_value = e.try_get_attribute(b"value")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            if let Some(effective_time) = &mut current_effective_time {
+                                effective_time.low = low_value;
+                            }
+                        }
+                        b"high" => {
+                            let high_value = e.try_get_attribute(b"value")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            if let Some(act) = &mut current_act {
+                                if let Some(body) = &mut act.act_body {
+                                    if let Some(effective_time) = &mut body.effective_time {
+                                        effective_time.high = high_value;
+                                    }
                                 }
                             }
                         }
