@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Generate sample C-CDA XML documents for parser testing and benchmarking.
 
@@ -15,11 +14,11 @@ environment variable to hold a Fernet key. Generate one with:
     python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 """
 
-import random
-import uuid
 import argparse
 import os
-from datetime import datetime, timedelta
+import random
+import uuid
+from datetime import datetime, timedelta, timezone
 
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
@@ -82,8 +81,8 @@ def rand_root():
     return f"2.16.840.1.113883.19.{random.randint(1, 9999)}"
 
 def rand_date(start_year=1940, end_year=1990):
-    start = datetime(start_year, 1, 1)
-    end = datetime(end_year, 12, 31)
+    start = datetime(start_year, 1, 1, tzinfo=timezone.utc)
+    end = datetime(end_year, 12, 31, tzinfo=timezone.utc)
     delta = end - start
     return (start + timedelta(days=random.randint(0, delta.days))).strftime("%Y%m%d")
 
@@ -102,7 +101,7 @@ def rand_medication():
 def rand_patient():
     given = random.choice(GIVEN_NAMES)
     family = random.choice(FAMILY_NAMES)
-    gender_code, gender_display = random.choice(GENDERS)
+    gender_code, _gender_display = random.choice(GENDERS)
     dob = rand_date(1930, 2000)
     patient_id = str(random.randint(10000, 99999))
     return given, family, gender_code, dob, patient_id
@@ -434,7 +433,7 @@ def clear_directory(output_dir):
     if not os.path.exists(output_dir):
         print(f"Nothing to clear — {output_dir} does not exist")
         return
-    files = [f for f in os.listdir(output_dir) if f.endswith(".xml") or f.endswith(".xml.enc")]
+    files = [f for f in os.listdir(output_dir) if f.endswith((".xml", ".xml.enc"))]
     for f in files:
         os.remove(os.path.join(output_dir, f))
     print(f"Cleared {len(files)} files from {output_dir}")
