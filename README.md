@@ -6,4 +6,4 @@ Sample documents were taken from https://github.com/HL7/C-CDA-Examples.
 
 LOINC Coverage Status:
 
-11450-4 -> Problems section
+11450-4 -> Problems section [In Progress]

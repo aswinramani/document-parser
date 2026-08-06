@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::BufReader;
 use quick_xml::Reader;
 use quick_xml::events::Event;
-use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody};
+use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation};
 use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime};
 
 #[derive(Debug, PartialEq)]
@@ -14,6 +14,7 @@ enum ParseState {
     InAct,
     InEffectiveTime,
     InEntryRelationship,
+    InObservation,
     InAuthor,
 }
 
@@ -34,6 +35,10 @@ pub fn problem_section(file_path_str: &str) -> Section {
     let mut current_entry: Option<Entry> = None;
     let mut current_act: Option<EntryAct> = None;
     let mut current_effective_time: Option<EffectiveTime> = None;
+    let mut current_entry_relationship: Option<EntryRelationship> = None;
+    let mut current_observation: Option<Observation> = None;
+    let mut observation_depth: u8 = 0;
+
     loop {
         match xml.read_event_into(&mut buf) {
             // for error handling
