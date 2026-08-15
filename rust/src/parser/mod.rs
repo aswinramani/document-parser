@@ -89,14 +89,50 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             high: None,
                         });
                     }
-                    b"entryRelationship" => state = ParseState::InEntryRelationship,
+                    b"entryRelationship" => {
+                        if state == ParseState::InAct {
+                            state = ParseState::InEntryRelationship;
+                            let type_code: Option<String> = e.try_get_attribute(b"typeCode")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            current_entry_relationship = Some(EntryRelationship {
+                                type_code,
+                                observation: None,
+                            });
+                        }
+                    }
+                    b"observation" => {
+                        if state == ParseState::InEntryRelationship {
+                            observation_depth = 1;
+                            state = ParseState::InObservation;
+                            let class_code = e.try_get_attribute(b"classCode")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let mood_code = e.try_get_attribute(b"moodCode")
+                                .unwrap()
+                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            current_observation = Some(Observation {
+                                class_code,
+                                mood_code,
+                                template_ids: Vec::new(),
+                                id: None,
+                                code: None,
+                                status_code: None,
+                                text: None,
+                                effective_time: None,
+                                value: None,
+                                author: None,
+                            })
+                        } else if state == ParseState::InObservation {
+                            observation_depth += 1;
+                        }
+                    }
                     b"author" => state = ParseState::InAuthor,
                     _ => {}
                 }
             }
             // works for closing tag for example </act>
             Ok(Event::End(e)) => {
-                // println!("event end name {:?}", e.name());
                 match e.name().as_ref() {
                     b"section" => state = ParseState::Root,
                     b"entry" => {
@@ -134,11 +170,9 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             let root = e.try_get_attribute(b"root")
                                 .unwrap()
                                 .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            // println!("InSection > templateId root => {:?}", root);
                             let extension = e.try_get_attribute(b"extension")
                                 .unwrap()
                                 .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            // println!("InSection > templateId extension => {:?}", extension);
                             let template_id = BaseIdentifier {
                                 root,
                                 extension,
@@ -161,7 +195,6 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             let null_flavor = e.try_get_attribute(b"nullFlavor")
                                 .unwrap()
                                 .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            println!("InSection > code: code {:?}", code);
                             section.code = Some(Code{
                                 code,
                                 code_system,
@@ -182,16 +215,13 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             let root = e.try_get_attribute(b"root")
                                 .unwrap()
                                 .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            // println!("InSection > templateId root => {:?}", root);
                             let extension = e.try_get_attribute(b"extension")
                                 .unwrap()
                                 .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            // println!("InSection > templateId extension => {:?}", extension);
                             let template_id = BaseIdentifier {
                                 root,
                                 extension,
                             };
-                            // current_act.act_body.template_ids.push(template_id);
                             if let Some(act) = &mut current_act {
                                 if let Some(body) = &mut act.act_body {
                                     body.template_ids.push(template_id);
@@ -202,16 +232,13 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             let root = e.try_get_attribute(b"root")
                                 .unwrap()
                                 .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            // println!("InSection > templateId root => {:?}", root);
                             let extension = e.try_get_attribute(b"extension")
                                 .unwrap()
                                 .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            // println!("InSection > templateId extension => {:?}", extension);
                             let id = Some(BaseIdentifier {
                                 root,
                                 extension,
                             });
-                            // current_act.act_body.id = id;
                             if let Some(act) = &mut current_act {
                                 if let Some(body) = &mut act.act_body {
                                     body.id = id;
@@ -294,7 +321,6 @@ pub fn problem_section(file_path_str: &str) -> Section {
         }
         buf.clear();
     }
-    // println!("section.template_ids {:?}", section.template_ids);
     // println!("section.code {:?}", section.code);
     println!("section.entries {:?}", section.entries);
     return section;
