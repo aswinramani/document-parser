@@ -152,13 +152,31 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     b"effectiveTime" => {
                         state = ParseState::InAct;
                         if let Some(act) = &mut current_act {
-                                if let Some(body) = &mut act.act_body {
-                                    body.effective_time = current_effective_time.take();
+                            if let Some(body) = &mut act.act_body {
+                                body.effective_time = current_effective_time.take();
+                            }
+                        }
+                    },
+                    b"entryRelationship" => {
+                        if let Some(act) = &mut current_act {
+                            if let Some(body) = &mut act.act_body {
+                                if let Some(some_entry_relationship) = current_entry_relationship.take() {
+                                    body.entry_relationships.push(some_entry_relationship);
                                 }
                             }
+                        }
+                        state = ParseState::InAct;
                     },
-                    b"entryRelationship" => state = ParseState::InAct,
-                    b"author" => state = ParseState::InEntryRelationship,
+                    b"observation" => {
+                        observation_depth -= 1;
+                        if observation_depth == 0 {
+                            if let Some(some_entry_relationship) = &mut current_entry_relationship {
+                                some_entry_relationship.observation = current_observation.take();
+                            }
+                            state = ParseState::InEntryRelationship;
+                        }
+                    },
+                    b"author" => state = ParseState::InObservation,
                     _ => {}
                 }
             }
