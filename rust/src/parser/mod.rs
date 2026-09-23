@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::BufReader;
 use quick_xml::Reader;
 use quick_xml::events::Event;
+use quick_xml::events::BytesStart;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation};
 use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime};
 
@@ -16,6 +17,13 @@ enum ParseState {
     InEntryRelationship,
     InObservation,
     InAuthor,
+}
+
+fn get_attr(e: &BytesStart, attr: &[u8]) -> Option<String> {
+    return e.try_get_attribute(attr)
+        .ok()
+        .flatten()
+        .map(|a| String::from_utf8_lossy(&a.value).into_owned());
 }
 
 pub fn problem_section(file_path_str: &str) -> Section {
@@ -55,12 +63,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     }
                     b"act" => {
                         state = ParseState::InAct;
-                        let class_code = e.try_get_attribute(b"classCode")
-                            .unwrap()
-                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                        let mood_code = e.try_get_attribute(b"moodCode")
-                            .unwrap()
-                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                        let class_code = get_attr(&e, b"classCode");
+                        let mood_code = get_attr(&e, b"moodCode");
                         current_act = Some(EntryAct {
                             class_code,
                             mood_code,
@@ -76,12 +80,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     }
                     b"effectiveTime" => {
                         state = ParseState::InEffectiveTime;
-                        let null_flavor = e.try_get_attribute(b"nullFlavor")
-                            .unwrap()
-                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                        let value = e.try_get_attribute(b"value")
-                            .unwrap()
-                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                        let null_flavor = get_attr(&e, b"nullFlavor");
+                        let value = get_attr(&e, b"value");
                         current_effective_time = Some(EffectiveTime {
                             null_flavor,
                             value,
@@ -92,9 +92,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     b"entryRelationship" => {
                         if state == ParseState::InAct {
                             state = ParseState::InEntryRelationship;
-                            let type_code: Option<String> = e.try_get_attribute(b"typeCode")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let type_code = get_attr(&e, b"typeCode");
                             current_entry_relationship = Some(EntryRelationship {
                                 type_code,
                                 observation: None,
@@ -105,12 +103,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                         if state == ParseState::InEntryRelationship {
                             observation_depth = 1;
                             state = ParseState::InObservation;
-                            let class_code = e.try_get_attribute(b"classCode")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let mood_code = e.try_get_attribute(b"moodCode")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let class_code = get_attr(&e, b"classCode");
+                            let mood_code = get_attr(&e, b"moodCode");
                             current_observation = Some(Observation {
                                 class_code,
                                 mood_code,
