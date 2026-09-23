@@ -179,12 +179,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 if state == ParseState::InSection {
                     match e.name().as_ref() {
                         b"templateId" => {
-                            let root = e.try_get_attribute(b"root")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let extension = e.try_get_attribute(b"extension")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let root = get_attr(&e, b"root");
+                            let extension = get_attr(&e, b"extension");
                             let template_id = BaseIdentifier {
                                 root,
                                 extension,
@@ -192,21 +188,11 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             section.template_ids.push(template_id);
                         }
                         b"code" => {
-                            let code = e.try_get_attribute(b"code")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let code_system = e.try_get_attribute(b"codeSystem")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let display_name = e.try_get_attribute(b"displayName")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let code_system_name = e.try_get_attribute(b"codeSystemName")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let null_flavor = e.try_get_attribute(b"nullFlavor")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let code = get_attr(&e, b"code");
+                            let code_system = get_attr(&e, b"codeSystem");
+                            let display_name = get_attr(&e, b"displayName");
+                            let code_system_name = get_attr(&e, b"codeSystemName");
+                            let null_flavor = get_attr(&e, b"nullFlavor");
                             section.code = Some(Code{
                                 code,
                                 code_system,
@@ -224,12 +210,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 if state == ParseState::InAct {
                     match e.name().as_ref() {
                         b"templateId" => {
-                            let root = e.try_get_attribute(b"root")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let extension = e.try_get_attribute(b"extension")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let root = get_attr(&e, b"root");
+                            let extension = get_attr(&e, b"extension");
                             let template_id = BaseIdentifier {
                                 root,
                                 extension,
@@ -241,12 +223,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             }
                         }
                         b"id" => {
-                            let root = e.try_get_attribute(b"root")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let extension = e.try_get_attribute(b"extension")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let root = get_attr(&e, b"root");
+                            let extension = get_attr(&e, b"extension");
                             let id = Some(BaseIdentifier {
                                 root,
                                 extension,
@@ -258,21 +236,11 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             }
                         }
                         b"code" => {
-                            let code = e.try_get_attribute(b"code")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let code_system = e.try_get_attribute(b"codeSystem")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let display_name = e.try_get_attribute(b"displayName")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let code_system_name = e.try_get_attribute(b"codeSystemName")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let null_flavor = e.try_get_attribute(b"nullFlavor")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let code = get_attr(&e, b"code");
+                            let code_system = get_attr(&e, b"codeSystem");
+                            let display_name = get_attr(&e, b"displayName");
+                            let code_system_name = get_attr(&e, b"codeSystemName");
+                            let null_flavor = get_attr(&e, b"nullFlavor");
                             let code = Some(Code{
                                 code,
                                 code_system,
@@ -289,9 +257,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             }
                         }
                         b"statusCode" => {
-                            let code = e.try_get_attribute(b"code")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let code = get_attr(&e, b"code");
                             if let Some(act) = &mut current_act {
                                 if let Some(body) = &mut act.act_body {
                                     body.status_code = code;
@@ -304,17 +270,13 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 if state == ParseState::InEffectiveTime {
                     match e.name().as_ref() {
                         b"low" => {
-                            let low_value = e.try_get_attribute(b"value")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let low_value = get_attr(&e, b"value");
                             if let Some(effective_time) = &mut current_effective_time {
                                 effective_time.low = low_value;
                             }
                         }
                         b"high" => {
-                            let high_value = e.try_get_attribute(b"value")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let high_value = get_attr(&e, b"value");
                             if let Some(act) = &mut current_act {
                                 if let Some(body) = &mut act.act_body {
                                     if let Some(effective_time) = &mut body.effective_time {
