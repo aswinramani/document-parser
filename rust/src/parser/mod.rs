@@ -116,6 +116,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 effective_time: None,
                                 value: None,
                                 author: None,
+                                entry_relationships: Vec::new(),
                             })
                         } else if state == ParseState::InObservation {
                             observation_depth += 1;
@@ -277,12 +278,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                         }
                         b"high" => {
                             let high_value = get_attr(&e, b"value");
-                            if let Some(act) = &mut current_act {
-                                if let Some(body) = &mut act.act_body {
-                                    if let Some(effective_time) = &mut body.effective_time {
-                                        effective_time.high = high_value;
-                                    }
-                                }
+                            if let Some(effective_time) = &mut current_effective_time {
+                                effective_time.high = high_value;
                             }
                         }
                         _ => {}

@@ -56,6 +56,7 @@ pub struct Observation {
     pub effective_time: Option<EffectiveTime>,
     pub value: Option<Value>,
     pub author: Option<Author>,
+    pub entry_relationships: Vec<EntryRelationship>,
 }
 
 #[derive(Debug)]
