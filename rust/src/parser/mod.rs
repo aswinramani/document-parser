@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::BufReader;
 use quick_xml::Reader;
 use quick_xml::events::Event;
+use quick_xml::events::BytesStart;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation};
 use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime};
 
@@ -16,6 +17,13 @@ enum ParseState {
     InEntryRelationship,
     InObservation,
     InAuthor,
+}
+
+fn get_attr(e: &BytesStart, attr: &[u8]) -> Option<String> {
+    return e.try_get_attribute(attr)
+        .ok()
+        .flatten()
+        .map(|a| String::from_utf8_lossy(&a.value).into_owned());
 }
 
 pub fn problem_section(file_path_str: &str) -> Section {
@@ -55,12 +63,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     }
                     b"act" => {
                         state = ParseState::InAct;
-                        let class_code = e.try_get_attribute(b"classCode")
-                            .unwrap()
-                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                        let mood_code = e.try_get_attribute(b"moodCode")
-                            .unwrap()
-                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                        let class_code = get_attr(&e, b"classCode");
+                        let mood_code = get_attr(&e, b"moodCode");
                         current_act = Some(EntryAct {
                             class_code,
                             mood_code,
@@ -76,12 +80,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     }
                     b"effectiveTime" => {
                         state = ParseState::InEffectiveTime;
-                        let null_flavor = e.try_get_attribute(b"nullFlavor")
-                            .unwrap()
-                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                        let value = e.try_get_attribute(b"value")
-                            .unwrap()
-                            .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                        let null_flavor = get_attr(&e, b"nullFlavor");
+                        let value = get_attr(&e, b"value");
                         current_effective_time = Some(EffectiveTime {
                             null_flavor,
                             value,
@@ -92,9 +92,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     b"entryRelationship" => {
                         if state == ParseState::InAct {
                             state = ParseState::InEntryRelationship;
-                            let type_code: Option<String> = e.try_get_attribute(b"typeCode")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let type_code = get_attr(&e, b"typeCode");
                             current_entry_relationship = Some(EntryRelationship {
                                 type_code,
                                 observation: None,
@@ -105,12 +103,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                         if state == ParseState::InEntryRelationship {
                             observation_depth = 1;
                             state = ParseState::InObservation;
-                            let class_code = e.try_get_attribute(b"classCode")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let mood_code = e.try_get_attribute(b"moodCode")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let class_code = get_attr(&e, b"classCode");
+                            let mood_code = get_attr(&e, b"moodCode");
                             current_observation = Some(Observation {
                                 class_code,
                                 mood_code,
@@ -185,12 +179,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 if state == ParseState::InSection {
                     match e.name().as_ref() {
                         b"templateId" => {
-                            let root = e.try_get_attribute(b"root")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let extension = e.try_get_attribute(b"extension")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let root = get_attr(&e, b"root");
+                            let extension = get_attr(&e, b"extension");
                             let template_id = BaseIdentifier {
                                 root,
                                 extension,
@@ -198,21 +188,11 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             section.template_ids.push(template_id);
                         }
                         b"code" => {
-                            let code = e.try_get_attribute(b"code")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let code_system = e.try_get_attribute(b"codeSystem")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let display_name = e.try_get_attribute(b"displayName")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let code_system_name = e.try_get_attribute(b"codeSystemName")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let null_flavor = e.try_get_attribute(b"nullFlavor")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let code = get_attr(&e, b"code");
+                            let code_system = get_attr(&e, b"codeSystem");
+                            let display_name = get_attr(&e, b"displayName");
+                            let code_system_name = get_attr(&e, b"codeSystemName");
+                            let null_flavor = get_attr(&e, b"nullFlavor");
                             section.code = Some(Code{
                                 code,
                                 code_system,
@@ -230,12 +210,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 if state == ParseState::InAct {
                     match e.name().as_ref() {
                         b"templateId" => {
-                            let root = e.try_get_attribute(b"root")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let extension = e.try_get_attribute(b"extension")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let root = get_attr(&e, b"root");
+                            let extension = get_attr(&e, b"extension");
                             let template_id = BaseIdentifier {
                                 root,
                                 extension,
@@ -247,12 +223,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             }
                         }
                         b"id" => {
-                            let root = e.try_get_attribute(b"root")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let extension = e.try_get_attribute(b"extension")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let root = get_attr(&e, b"root");
+                            let extension = get_attr(&e, b"extension");
                             let id = Some(BaseIdentifier {
                                 root,
                                 extension,
@@ -264,21 +236,11 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             }
                         }
                         b"code" => {
-                            let code = e.try_get_attribute(b"code")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let code_system = e.try_get_attribute(b"codeSystem")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let display_name = e.try_get_attribute(b"displayName")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let code_system_name = e.try_get_attribute(b"codeSystemName")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
-                            let null_flavor = e.try_get_attribute(b"nullFlavor")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let code = get_attr(&e, b"code");
+                            let code_system = get_attr(&e, b"codeSystem");
+                            let display_name = get_attr(&e, b"displayName");
+                            let code_system_name = get_attr(&e, b"codeSystemName");
+                            let null_flavor = get_attr(&e, b"nullFlavor");
                             let code = Some(Code{
                                 code,
                                 code_system,
@@ -295,9 +257,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             }
                         }
                         b"statusCode" => {
-                            let code = e.try_get_attribute(b"code")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let code = get_attr(&e, b"code");
                             if let Some(act) = &mut current_act {
                                 if let Some(body) = &mut act.act_body {
                                     body.status_code = code;
@@ -310,17 +270,13 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 if state == ParseState::InEffectiveTime {
                     match e.name().as_ref() {
                         b"low" => {
-                            let low_value = e.try_get_attribute(b"value")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let low_value = get_attr(&e, b"value");
                             if let Some(effective_time) = &mut current_effective_time {
                                 effective_time.low = low_value;
                             }
                         }
                         b"high" => {
-                            let high_value = e.try_get_attribute(b"value")
-                                .unwrap()
-                                .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+                            let high_value = get_attr(&e, b"value");
                             if let Some(act) = &mut current_act {
                                 if let Some(body) = &mut act.act_body {
                                     if let Some(effective_time) = &mut body.effective_time {
