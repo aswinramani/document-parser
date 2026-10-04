@@ -140,11 +140,14 @@ pub fn problem_section(file_path_str: &str) -> Section {
                         }
                     }
                     b"effectiveTime" => {
-                        state = ParseState::InAct;
-                        if let Some(act) = &mut current_act {
+                        if let Some(observation) = observation_stack.last_mut() {
+                            observation.effective_time = current_effective_time.take();
+                            state = ParseState::InObservation;
+                        } else if let Some(act) = &mut current_act {
                             if let Some(body) = &mut act.act_body {
                                 body.effective_time = current_effective_time.take();
                             }
+                            state = ParseState::InAct;
                         }
                     },
                     b"entryRelationship" => {
