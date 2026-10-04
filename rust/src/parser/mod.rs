@@ -43,10 +43,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
     let mut current_entry: Option<Entry> = None;
     let mut current_act: Option<EntryAct> = None;
     let mut current_effective_time: Option<EffectiveTime> = None;
-    let mut current_entry_relationship: Option<EntryRelationship> = None;
-    let mut current_observation: Option<Observation> = None;
-    let mut observation_depth: u8 = 0;
-
+    let mut entry_relationship_stack: Vec<EntryRelationship> = Vec::new();
+    let mut observation_stack: Vec<Observation> = Vec::new();
     loop {
         match xml.read_event_into(&mut buf) {
             // for error handling
@@ -90,10 +88,10 @@ pub fn problem_section(file_path_str: &str) -> Section {
                         });
                     }
                     b"entryRelationship" => {
-                        if state == ParseState::InAct {
+                        if state == ParseState::InAct || state == ParseState::InObservation {
                             state = ParseState::InEntryRelationship;
                             let type_code = get_attr(&e, b"typeCode");
-                            current_entry_relationship = Some(EntryRelationship {
+                            entry_relationship_stack.push(EntryRelationship {
                                 type_code,
                                 observation: None,
                             });
@@ -101,11 +99,10 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     }
                     b"observation" => {
                         if state == ParseState::InEntryRelationship {
-                            observation_depth = 1;
                             state = ParseState::InObservation;
                             let class_code = get_attr(&e, b"classCode");
                             let mood_code = get_attr(&e, b"moodCode");
-                            current_observation = Some(Observation {
+                            observation_stack.push(Observation {
                                 class_code,
                                 mood_code,
                                 template_ids: Vec::new(),
@@ -117,9 +114,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 value: None,
                                 author: None,
                                 entry_relationships: Vec::new(),
-                            })
-                        } else if state == ParseState::InObservation {
-                            observation_depth += 1;
+                            });
                         }
                     }
                     b"author" => state = ParseState::InAuthor,
@@ -153,20 +148,24 @@ pub fn problem_section(file_path_str: &str) -> Section {
                         }
                     },
                     b"entryRelationship" => {
-                        if let Some(act) = &mut current_act {
-                            if let Some(body) = &mut act.act_body {
-                                if let Some(some_entry_relationship) = current_entry_relationship.take() {
-                                    body.entry_relationships.push(some_entry_relationship);
+                        if let Some(finished_entry_relationship) = entry_relationship_stack.pop() {
+                            if let Some(waiting_observation) = observation_stack.last_mut() {
+                                waiting_observation.entry_relationships.push(finished_entry_relationship);
+                                state = ParseState::InObservation;
+                            } else {
+                                if let Some(act) = &mut current_act {
+                                    if let Some(body) = &mut act.act_body {
+                                        body.entry_relationships.push(finished_entry_relationship);
+                                    }
                                 }
+                                state = ParseState::InAct;
                             }
                         }
-                        state = ParseState::InAct;
                     },
                     b"observation" => {
-                        observation_depth -= 1;
-                        if observation_depth == 0 {
-                            if let Some(some_entry_relationship) = &mut current_entry_relationship {
-                                some_entry_relationship.observation = current_observation.take();
+                        if let Some(finished_observation) = observation_stack.pop() {
+                            if let Some(waiting_relationship) = entry_relationship_stack.last_mut() {
+                                waiting_relationship.observation = Some(finished_observation);
                             }
                             state = ParseState::InEntryRelationship;
                         }
