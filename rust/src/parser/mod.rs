@@ -5,7 +5,7 @@ use quick_xml::Reader;
 use quick_xml::events::Event;
 use quick_xml::events::BytesStart;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation};
-use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime};
+use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation};
 
 #[derive(Debug, PartialEq)]
 enum ParseState {
@@ -115,6 +115,27 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 author: None,
                                 entry_relationships: Vec::new(),
                             });
+                        }
+                    }
+                    b"code" => {
+                        if state == ParseState::InObservation {
+                            let code = get_attr(&e, b"code");
+                            let code_system = get_attr(&e, b"codeSystem");
+                            let display_name = get_attr(&e, b"displayName");
+                            let code_system_name = get_attr(&e, b"codeSystemName");
+                            let null_flavor = get_attr(&e, b"nullFlavor");
+                            let code = Some(Code{
+                                code,
+                                code_system,
+                                display_name,
+                                code_system_name,
+                                null_flavor,
+                                translations: Vec::new(),
+                                xsi_type: None,
+                            });
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.code = code;
+                            }
                         }
                     }
                     b"author" => state = ParseState::InAuthor,
@@ -282,6 +303,61 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             let high_value = get_attr(&e, b"value");
                             if let Some(effective_time) = &mut current_effective_time {
                                 effective_time.high = high_value;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                if state == ParseState::InObservation {
+                    match e.name().as_ref() {
+                        b"templateId" => {
+                            let root = get_attr(&e, b"root");
+                            let extension = get_attr(&e, b"extension");
+                            let template_id = BaseIdentifier {
+                                root,
+                                extension,
+                            };
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.template_ids.push(template_id);
+                            }
+                        }
+                        b"id" => {
+                            let root = get_attr(&e, b"root");
+                            let extension = get_attr(&e, b"extension");
+                            let id = Some(BaseIdentifier {
+                                root,
+                                extension,
+                            });
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.id = id;
+                            }
+                        }
+                        b"statusCode" => {
+                            let code = get_attr(&e, b"code");
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.status_code = code;
+                            }
+                        }
+                        b"translation" => {
+                            let code = get_attr(&e, b"code");
+                            let code_system = get_attr(&e, b"codeSystem");
+                            let display_name = get_attr(&e, b"displayName");
+                            let code_system_name = get_attr(&e, b"codeSystemName");
+                            let null_flavor = get_attr(&e, b"nullFlavor");
+                            let xsi_type = get_attr(&e, b"xsi:type");
+                            let code = Translation{
+                                code,
+                                code_system,
+                                display_name,
+                                code_system_name,
+                                null_flavor,
+                                xsi_type,
+                            };
+                            // let code = get_attr(&e, b"code");
+                            if let Some(observation) = observation_stack.last_mut() {
+                                if let Some(observation_code) =  observation.code.as_mut() {
+                                    observation_code.translations.push(code);
+                                }
                             }
                         }
                         _ => {}
