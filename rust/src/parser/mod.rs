@@ -4,7 +4,7 @@ use std::io::BufReader;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use quick_xml::events::BytesStart;
-use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation};
+use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation, Value};
 use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation};
 
 #[derive(Debug, PartialEq)]
@@ -16,6 +16,7 @@ enum ParseState {
     InEffectiveTime,
     InEntryRelationship,
     InObservation,
+    InValue,
     InAuthor,
 }
 
@@ -138,6 +139,33 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             }
                         }
                     }
+                    b"value" => {
+                        if state == ParseState::InObservation {
+                            let code = get_attr(&e, b"code");
+                            let code_system = get_attr(&e, b"codeSystem");
+                            let display_name = get_attr(&e, b"displayName");
+                            let code_system_name = get_attr(&e, b"codeSystemName");
+                            let null_flavor = get_attr(&e, b"nullFlavor");
+                            let xsi_type = get_attr(&e, b"xsi:type");
+                            let code = Some(Code{
+                                code,
+                                code_system,
+                                display_name,
+                                code_system_name,
+                                null_flavor,
+                                translations: Vec::new(),
+                                xsi_type,
+                            });
+                            let obs_value = Some(Value{
+                                code,
+                                original_text: None,
+                            });
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.value = obs_value;
+                            }
+                            state = ParseState::InValue
+                        }
+                    }
                     b"author" => state = ParseState::InAuthor,
                     _ => {}
                 }
@@ -194,6 +222,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             state = ParseState::InEntryRelationship;
                         }
                     },
+                    b"value" => state = ParseState::InObservation,
                     b"author" => state = ParseState::InObservation,
                     _ => {}
                 }
@@ -356,6 +385,58 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             if let Some(observation) = observation_stack.last_mut() {
                                 if let Some(observation_code) =  observation.code.as_mut() {
                                     observation_code.translations.push(code);
+                                }
+                            }
+                        }
+                        b"value" => {
+                            let code = get_attr(&e, b"code");
+                            let code_system = get_attr(&e, b"codeSystem");
+                            let display_name = get_attr(&e, b"displayName");
+                            let code_system_name = get_attr(&e, b"codeSystemName");
+                            let null_flavor = get_attr(&e, b"nullFlavor");
+                            let xsi_type = get_attr(&e, b"xsi:type");
+                            let value_code = Some(Code{
+                                code,
+                                code_system,
+                                display_name,
+                                code_system_name,
+                                null_flavor,
+                                translations: Vec::new(),
+                                xsi_type,
+                            });
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.value = Some(Value{
+                                    code: value_code,
+                                    original_text: None,
+                                });
+                            }
+                        }
+
+                        _ => {}
+                    }
+                }
+                if state == ParseState::InValue {
+                    match e.name().as_ref() {
+                        b"translation" => {
+                            let code = get_attr(&e, b"code");
+                            let code_system = get_attr(&e, b"codeSystem");
+                            let display_name = get_attr(&e, b"displayName");
+                            let code_system_name = get_attr(&e, b"codeSystemName");
+                            let null_flavor = get_attr(&e, b"nullFlavor");
+                            let xsi_type = get_attr(&e, b"xsi:type");
+                            let code = Translation{
+                                code,
+                                code_system,
+                                display_name,
+                                code_system_name,
+                                null_flavor,
+                                xsi_type,
+                            };
+                            if let Some(observation) = observation_stack.last_mut() {
+                                if let Some(observation_value) =  observation.value.as_mut() {
+                                    if let Some(value_code) =  observation_value.code.as_mut() {
+                                        value_code.translations.push(code);
+                                    }
                                 }
                             }
                         }
