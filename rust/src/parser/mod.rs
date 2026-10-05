@@ -353,7 +353,6 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 null_flavor,
                                 xsi_type,
                             };
-                            // let code = get_attr(&e, b"code");
                             if let Some(observation) = observation_stack.last_mut() {
                                 if let Some(observation_code) =  observation.code.as_mut() {
                                     observation_code.translations.push(code);
