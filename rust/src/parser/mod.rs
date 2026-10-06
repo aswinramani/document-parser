@@ -5,7 +5,7 @@ use quick_xml::Reader;
 use quick_xml::events::Event;
 use quick_xml::events::BytesStart;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation, Value};
-use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference};
+use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference, Author, AssignedAuthor};
 
 #[derive(Debug, PartialEq)]
 enum ParseState {
@@ -20,6 +20,7 @@ enum ParseState {
     InValue,
     InOriginalText,
     InAuthor,
+    InAssignedAuthor,
 }
 
 fn get_attr(e: &BytesStart, attr: &[u8]) -> Option<String> {
@@ -179,6 +180,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                         }
                     }
                     b"author" => state = ParseState::InAuthor,
+                    b"assignedAuthor" => state = ParseState::InAssignedAuthor,
                     _ => {}
                 }
             }
@@ -242,6 +244,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     b"value" => state = ParseState::InObservation,
                     b"originalText" => state = ParseState::InValue,
                     b"author" => state = ParseState::InObservation,
+                    b"assignedAuthor" => state = ParseState::InAuthor,
                     _ => {}
                 }
             }
@@ -485,6 +488,92 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             if let Some(observation) = observation_stack.last_mut() {
                                 if let Some(observation_value) =  observation.value.as_mut() {
                                     observation_value.original_text = reference;
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                if state == ParseState::InAuthor {
+                    match e.name().as_ref() {
+                        b"templateId" => {
+                            let root = get_attr(&e, b"root");
+                            let extension = get_attr(&e, b"extension");
+                            let template_id = Some(BaseIdentifier{
+                                root,
+                                extension,
+                            });
+                            let author = Some(Author{
+                                template_id,
+                                time: None,
+                                assigned_author: None,
+                            });
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.author = author;
+                            }
+                        }
+                        b"time" => {
+                            let low = get_attr(&e, b"low");
+                            let high = get_attr(&e, b"high");
+                            let null_flavor = get_attr(&e, b"null_flavor");
+                            let value = get_attr(&e, b"value");
+                            let time = Some(EffectiveTime{
+                                low,
+                                high,
+                                null_flavor,
+                                value,
+                            });
+                            if let Some(observation) = observation_stack.last_mut() {
+                                if let Some(observation_author) =  observation.author.as_mut() {
+                                    observation_author.time = time;
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                if state == ParseState::InAssignedAuthor {
+                    match e.name().as_ref() {
+                        b"id" => {
+                            let root = get_attr(&e, b"root");
+                            let extension = get_attr(&e, b"extension");
+                            let id = Some(BaseIdentifier{
+                                root,
+                                extension,
+                            });
+                            let assigned_author = Some(AssignedAuthor{
+                                id,
+                                code: None,
+                                address: None,
+                                telecom: None,
+                                assigned_person: None,
+                            });
+                            if let Some(observation) = observation_stack.last_mut() {
+                                if let Some(observation_author) =  observation.author.as_mut() {
+                                    observation_author.assigned_author = assigned_author;
+                                }
+                            }
+                        }
+                        b"code" => {
+                            let code = get_attr(&e, b"code");
+                            let code_system = get_attr(&e, b"codeSystem");
+                            let display_name = get_attr(&e, b"displayName");
+                            let code_system_name = get_attr(&e, b"codeSystemName");
+                            let null_flavor = get_attr(&e, b"nullFlavor");
+                            let code = Some(Code{
+                                code,
+                                code_system,
+                                display_name,
+                                code_system_name,
+                                null_flavor,
+                                translations: Vec::new(),
+                                xsi_type: None,
+                            });
+                            if let Some(observation) = observation_stack.last_mut() {
+                                if let Some(observation_author) =  observation.author.as_mut() {
+                                    if let Some(observation_assigned_author) = observation_author.assigned_author.as_mut() {
+                                        observation_assigned_author.code = code;
+                                    }
                                 }
                             }
                         }
