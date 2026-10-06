@@ -1,5 +1,5 @@
 # Rust
-rust/target/
+target/
 
 # Kotlin
 kotlin/.idea/
