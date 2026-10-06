@@ -23,11 +23,11 @@ enum ParseState {
     InAssignedAuthor,
 }
 
-fn get_attr(e: &BytesStart, attr: &[u8]) -> Option<String> {
+fn get_attr(e: &BytesStart, attr: &str) -> Option<String> {
     return e.try_get_attribute(attr)
         .ok()
         .flatten()
-        .map(|a| String::from_utf8_lossy(&a.value).into_owned());
+        .map(|a| a.value.into_owned());
 }
 
 pub fn problem_section(file_path_str: &str) -> Section {
@@ -56,17 +56,17 @@ pub fn problem_section(file_path_str: &str) -> Section {
             // works for opening tag for example <act>
             Ok(Event::Start(e)) => {
                 match e.name().as_ref() {
-                    b"section" => state = ParseState::InSection,
-                    b"entry" => {
+                    "section" => state = ParseState::InSection,
+                    "entry" => {
                         state = ParseState::InEntry;
                         current_entry = Some(Entry {
                             clinical_statement: None
                         })
                     }
-                    b"act" => {
+                    "act" => {
                         state = ParseState::InAct;
-                        let class_code = get_attr(&e, b"classCode");
-                        let mood_code = get_attr(&e, b"moodCode");
+                        let class_code = get_attr(&e, "classCode");
+                        let mood_code = get_attr(&e, "moodCode");
                         current_act = Some(EntryAct {
                             class_code,
                             mood_code,
@@ -80,10 +80,10 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             })
                         });
                     }
-                    b"effectiveTime" => {
+                    "effectiveTime" => {
                         state = ParseState::InEffectiveTime;
-                        let null_flavor = get_attr(&e, b"nullFlavor");
-                        let value = get_attr(&e, b"value");
+                        let null_flavor = get_attr(&e, "nullFlavor");
+                        let value = get_attr(&e, "value");
                         current_effective_time = Some(EffectiveTime {
                             null_flavor,
                             value,
@@ -91,21 +91,21 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             high: None,
                         });
                     }
-                    b"entryRelationship" => {
+                    "entryRelationship" => {
                         if state == ParseState::InAct || state == ParseState::InObservation {
                             state = ParseState::InEntryRelationship;
-                            let type_code = get_attr(&e, b"typeCode");
+                            let type_code = get_attr(&e, "typeCode");
                             entry_relationship_stack.push(EntryRelationship {
                                 type_code,
                                 observation: None,
                             });
                         }
                     }
-                    b"observation" => {
+                    "observation" => {
                         if state == ParseState::InEntryRelationship {
                             state = ParseState::InObservation;
-                            let class_code = get_attr(&e, b"classCode");
-                            let mood_code = get_attr(&e, b"moodCode");
+                            let class_code = get_attr(&e, "classCode");
+                            let mood_code = get_attr(&e, "moodCode");
                             observation_stack.push(Observation {
                                 class_code,
                                 mood_code,
@@ -121,13 +121,13 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             });
                         }
                     }
-                    b"code" => {
+                    "code" => {
                         if state == ParseState::InObservation {
-                            let code = get_attr(&e, b"code");
-                            let code_system = get_attr(&e, b"codeSystem");
-                            let display_name = get_attr(&e, b"displayName");
-                            let code_system_name = get_attr(&e, b"codeSystemName");
-                            let null_flavor = get_attr(&e, b"nullFlavor");
+                            let code = get_attr(&e, "code");
+                            let code_system = get_attr(&e, "codeSystem");
+                            let display_name = get_attr(&e, "displayName");
+                            let code_system_name = get_attr(&e, "codeSystemName");
+                            let null_flavor = get_attr(&e, "nullFlavor");
                             let code = Some(Code{
                                 code,
                                 code_system,
@@ -142,19 +142,19 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             }
                         }
                     }
-                    b"text" => {
+                    "text" => {
                         if state == ParseState::InObservation {
                             state = ParseState::InText;
                         }
                     }
-                    b"value" => {
+                    "value" => {
                         if state == ParseState::InObservation {
-                            let code = get_attr(&e, b"code");
-                            let code_system = get_attr(&e, b"codeSystem");
-                            let display_name = get_attr(&e, b"displayName");
-                            let code_system_name = get_attr(&e, b"codeSystemName");
-                            let null_flavor = get_attr(&e, b"nullFlavor");
-                            let xsi_type = get_attr(&e, b"xsi:type");
+                            let code = get_attr(&e, "code");
+                            let code_system = get_attr(&e, "codeSystem");
+                            let display_name = get_attr(&e, "displayName");
+                            let code_system_name = get_attr(&e, "codeSystemName");
+                            let null_flavor = get_attr(&e, "nullFlavor");
+                            let xsi_type = get_attr(&e, "xsi:type");
                             let code = Some(Code{
                                 code,
                                 code_system,
@@ -174,27 +174,27 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             state = ParseState::InValue;
                         }
                     }
-                    b"originalText" => {
+                    "originalText" => {
                         if state == ParseState::InValue {
                             state = ParseState::InOriginalText;
                         }
                     }
-                    b"author" => state = ParseState::InAuthor,
-                    b"assignedAuthor" => state = ParseState::InAssignedAuthor,
+                    "author" => state = ParseState::InAuthor,
+                    "assignedAuthor" => state = ParseState::InAssignedAuthor,
                     _ => {}
                 }
             }
             // works for closing tag for example </act>
             Ok(Event::End(e)) => {
                 match e.name().as_ref() {
-                    b"section" => state = ParseState::Root,
-                    b"entry" => {
+                    "section" => state = ParseState::Root,
+                    "entry" => {
                         state = ParseState::InSection;
                         if let Some(entry) = current_entry.take() {
                             section.entries.push(entry);
                         }
                     }
-                    b"act" =>{ 
+                    "act" =>{ 
                         state = ParseState::InEntry;
                         if let Some(entry) = &mut current_entry {
                             entry.clinical_statement = Some(ClinicalStatement::EntryAct(
@@ -202,7 +202,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             ));
                         }
                     }
-                    b"effectiveTime" => {
+                    "effectiveTime" => {
                         if let Some(observation) = observation_stack.last_mut() {
                             observation.effective_time = current_effective_time.take();
                             state = ParseState::InObservation;
@@ -213,7 +213,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             state = ParseState::InAct;
                         }
                     },
-                    b"entryRelationship" => {
+                    "entryRelationship" => {
                         if let Some(finished_entry_relationship) = entry_relationship_stack.pop() {
                             if let Some(waiting_observation) = observation_stack.last_mut() {
                                 waiting_observation.entry_relationships.push(finished_entry_relationship);
@@ -228,7 +228,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             }
                         }
                     },
-                    b"observation" => {
+                    "observation" => {
                         if let Some(finished_observation) = observation_stack.pop() {
                             if let Some(waiting_relationship) = entry_relationship_stack.last_mut() {
                                 waiting_relationship.observation = Some(finished_observation);
@@ -236,15 +236,15 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             state = ParseState::InEntryRelationship;
                         }
                     },
-                    b"text" => {
+                    "text" => {
                         if state == ParseState::InText {
                             state = ParseState::InObservation;
                         }
                     }
-                    b"value" => state = ParseState::InObservation,
-                    b"originalText" => state = ParseState::InValue,
-                    b"author" => state = ParseState::InObservation,
-                    b"assignedAuthor" => state = ParseState::InAuthor,
+                    "value" => state = ParseState::InObservation,
+                    "originalText" => state = ParseState::InValue,
+                    "author" => state = ParseState::InObservation,
+                    "assignedAuthor" => state = ParseState::InAuthor,
                     _ => {}
                 }
             }
@@ -252,21 +252,21 @@ pub fn problem_section(file_path_str: &str) -> Section {
             Ok(Event::Empty(e)) => {
                 if state == ParseState::InSection {
                     match e.name().as_ref() {
-                        b"templateId" => {
-                            let root = get_attr(&e, b"root");
-                            let extension = get_attr(&e, b"extension");
+                        "templateId" => {
+                            let root = get_attr(&e, "root");
+                            let extension = get_attr(&e, "extension");
                             let template_id = BaseIdentifier {
                                 root,
                                 extension,
                             };
                             section.template_ids.push(template_id);
                         }
-                        b"code" => {
-                            let code = get_attr(&e, b"code");
-                            let code_system = get_attr(&e, b"codeSystem");
-                            let display_name = get_attr(&e, b"displayName");
-                            let code_system_name = get_attr(&e, b"codeSystemName");
-                            let null_flavor = get_attr(&e, b"nullFlavor");
+                        "code" => {
+                            let code = get_attr(&e, "code");
+                            let code_system = get_attr(&e, "codeSystem");
+                            let display_name = get_attr(&e, "displayName");
+                            let code_system_name = get_attr(&e, "codeSystemName");
+                            let null_flavor = get_attr(&e, "nullFlavor");
                             section.code = Some(Code{
                                 code,
                                 code_system,
@@ -283,9 +283,9 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 }
                 if state == ParseState::InAct {
                     match e.name().as_ref() {
-                        b"templateId" => {
-                            let root = get_attr(&e, b"root");
-                            let extension = get_attr(&e, b"extension");
+                        "templateId" => {
+                            let root = get_attr(&e, "root");
+                            let extension = get_attr(&e, "extension");
                             let template_id = BaseIdentifier {
                                 root,
                                 extension,
@@ -296,9 +296,9 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 }
                             }
                         }
-                        b"id" => {
-                            let root = get_attr(&e, b"root");
-                            let extension = get_attr(&e, b"extension");
+                        "id" => {
+                            let root = get_attr(&e, "root");
+                            let extension = get_attr(&e, "extension");
                             let id = Some(BaseIdentifier {
                                 root,
                                 extension,
@@ -309,12 +309,12 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 }
                             }
                         }
-                        b"code" => {
-                            let code = get_attr(&e, b"code");
-                            let code_system = get_attr(&e, b"codeSystem");
-                            let display_name = get_attr(&e, b"displayName");
-                            let code_system_name = get_attr(&e, b"codeSystemName");
-                            let null_flavor = get_attr(&e, b"nullFlavor");
+                        "code" => {
+                            let code = get_attr(&e, "code");
+                            let code_system = get_attr(&e, "codeSystem");
+                            let display_name = get_attr(&e, "displayName");
+                            let code_system_name = get_attr(&e, "codeSystemName");
+                            let null_flavor = get_attr(&e, "nullFlavor");
                             let code = Some(Code{
                                 code,
                                 code_system,
@@ -330,8 +330,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 }
                             }
                         }
-                        b"statusCode" => {
-                            let code = get_attr(&e, b"code");
+                        "statusCode" => {
+                            let code = get_attr(&e, "code");
                             if let Some(act) = &mut current_act {
                                 if let Some(body) = &mut act.act_body {
                                     body.status_code = code;
@@ -343,14 +343,14 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 }
                 if state == ParseState::InEffectiveTime {
                     match e.name().as_ref() {
-                        b"low" => {
-                            let low_value = get_attr(&e, b"value");
+                        "low" => {
+                            let low_value = get_attr(&e, "value");
                             if let Some(effective_time) = &mut current_effective_time {
                                 effective_time.low = low_value;
                             }
                         }
-                        b"high" => {
-                            let high_value = get_attr(&e, b"value");
+                        "high" => {
+                            let high_value = get_attr(&e, "value");
                             if let Some(effective_time) = &mut current_effective_time {
                                 effective_time.high = high_value;
                             }
@@ -360,9 +360,9 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 }
                 if state == ParseState::InObservation {
                     match e.name().as_ref() {
-                        b"templateId" => {
-                            let root = get_attr(&e, b"root");
-                            let extension = get_attr(&e, b"extension");
+                        "templateId" => {
+                            let root = get_attr(&e, "root");
+                            let extension = get_attr(&e, "extension");
                             let template_id = BaseIdentifier {
                                 root,
                                 extension,
@@ -371,9 +371,9 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 observation.template_ids.push(template_id);
                             }
                         }
-                        b"id" => {
-                            let root = get_attr(&e, b"root");
-                            let extension = get_attr(&e, b"extension");
+                        "id" => {
+                            let root = get_attr(&e, "root");
+                            let extension = get_attr(&e, "extension");
                             let id = Some(BaseIdentifier {
                                 root,
                                 extension,
@@ -382,19 +382,19 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 observation.id = id;
                             }
                         }
-                        b"statusCode" => {
-                            let code = get_attr(&e, b"code");
+                        "statusCode" => {
+                            let code = get_attr(&e, "code");
                             if let Some(observation) = observation_stack.last_mut() {
                                 observation.status_code = code;
                             }
                         }
-                        b"translation" => {
-                            let code = get_attr(&e, b"code");
-                            let code_system = get_attr(&e, b"codeSystem");
-                            let display_name = get_attr(&e, b"displayName");
-                            let code_system_name = get_attr(&e, b"codeSystemName");
-                            let null_flavor = get_attr(&e, b"nullFlavor");
-                            let xsi_type = get_attr(&e, b"xsi:type");
+                        "translation" => {
+                            let code = get_attr(&e, "code");
+                            let code_system = get_attr(&e, "codeSystem");
+                            let display_name = get_attr(&e, "displayName");
+                            let code_system_name = get_attr(&e, "codeSystemName");
+                            let null_flavor = get_attr(&e, "nullFlavor");
+                            let xsi_type = get_attr(&e, "xsi:type");
                             let code = Translation{
                                 code,
                                 code_system,
@@ -409,13 +409,13 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 }
                             }
                         }
-                        b"value" => {
-                            let code = get_attr(&e, b"code");
-                            let code_system = get_attr(&e, b"codeSystem");
-                            let display_name = get_attr(&e, b"displayName");
-                            let code_system_name = get_attr(&e, b"codeSystemName");
-                            let null_flavor = get_attr(&e, b"nullFlavor");
-                            let xsi_type = get_attr(&e, b"xsi:type");
+                        "value" => {
+                            let code = get_attr(&e, "code");
+                            let code_system = get_attr(&e, "codeSystem");
+                            let display_name = get_attr(&e, "displayName");
+                            let code_system_name = get_attr(&e, "codeSystemName");
+                            let null_flavor = get_attr(&e, "nullFlavor");
+                            let xsi_type = get_attr(&e, "xsi:type");
                             let value_code = Some(Code{
                                 code,
                                 code_system,
@@ -438,8 +438,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 }
                 if state == ParseState::InText {
                     match e.name().as_ref() {
-                        b"reference" => {
-                            let value = get_attr(&e, b"value");
+                        "reference" => {
+                            let value = get_attr(&e, "value");
                             let reference = Some(Reference{
                                 value
                             });
@@ -452,13 +452,13 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 }
                 if state == ParseState::InValue {
                     match e.name().as_ref() {
-                        b"translation" => {
-                            let code = get_attr(&e, b"code");
-                            let code_system = get_attr(&e, b"codeSystem");
-                            let display_name = get_attr(&e, b"displayName");
-                            let code_system_name = get_attr(&e, b"codeSystemName");
-                            let null_flavor = get_attr(&e, b"nullFlavor");
-                            let xsi_type = get_attr(&e, b"xsi:type");
+                        "translation" => {
+                            let code = get_attr(&e, "code");
+                            let code_system = get_attr(&e, "codeSystem");
+                            let display_name = get_attr(&e, "displayName");
+                            let code_system_name = get_attr(&e, "codeSystemName");
+                            let null_flavor = get_attr(&e, "nullFlavor");
+                            let xsi_type = get_attr(&e, "xsi:type");
                             let code = Translation{
                                 code,
                                 code_system,
@@ -480,8 +480,8 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 }
                 if state == ParseState::InOriginalText {
                     match e.name().as_ref() {
-                        b"reference" => {
-                            let value = get_attr(&e, b"value");
+                        "reference" => {
+                            let value = get_attr(&e, "value");
                             let reference = Some(Reference{
                                 value
                             });
@@ -496,9 +496,9 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 }
                 if state == ParseState::InAuthor {
                     match e.name().as_ref() {
-                        b"templateId" => {
-                            let root = get_attr(&e, b"root");
-                            let extension = get_attr(&e, b"extension");
+                        "templateId" => {
+                            let root = get_attr(&e, "root");
+                            let extension = get_attr(&e, "extension");
                             let template_id = Some(BaseIdentifier{
                                 root,
                                 extension,
@@ -512,11 +512,11 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 observation.author = author;
                             }
                         }
-                        b"time" => {
-                            let low = get_attr(&e, b"low");
-                            let high = get_attr(&e, b"high");
-                            let null_flavor = get_attr(&e, b"null_flavor");
-                            let value = get_attr(&e, b"value");
+                        "time" => {
+                            let low = get_attr(&e, "low");
+                            let high = get_attr(&e, "high");
+                            let null_flavor = get_attr(&e, "null_flavor");
+                            let value = get_attr(&e, "value");
                             let time = Some(EffectiveTime{
                                 low,
                                 high,
@@ -534,9 +534,9 @@ pub fn problem_section(file_path_str: &str) -> Section {
                 }
                 if state == ParseState::InAssignedAuthor {
                     match e.name().as_ref() {
-                        b"id" => {
-                            let root = get_attr(&e, b"root");
-                            let extension = get_attr(&e, b"extension");
+                        "id" => {
+                            let root = get_attr(&e, "root");
+                            let extension = get_attr(&e, "extension");
                             let id = Some(BaseIdentifier{
                                 root,
                                 extension,
@@ -554,12 +554,12 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 }
                             }
                         }
-                        b"code" => {
-                            let code = get_attr(&e, b"code");
-                            let code_system = get_attr(&e, b"codeSystem");
-                            let display_name = get_attr(&e, b"displayName");
-                            let code_system_name = get_attr(&e, b"codeSystemName");
-                            let null_flavor = get_attr(&e, b"nullFlavor");
+                        "code" => {
+                            let code = get_attr(&e, "code");
+                            let code_system = get_attr(&e, "codeSystem");
+                            let display_name = get_attr(&e, "displayName");
+                            let code_system_name = get_attr(&e, "codeSystemName");
+                            let null_flavor = get_attr(&e, "nullFlavor");
                             let code = Some(Code{
                                 code,
                                 code_system,
