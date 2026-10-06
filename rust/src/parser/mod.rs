@@ -5,7 +5,7 @@ use quick_xml::Reader;
 use quick_xml::events::Event;
 use quick_xml::events::BytesStart;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation, Value};
-use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation};
+use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference};
 
 #[derive(Debug, PartialEq)]
 enum ParseState {
@@ -16,7 +16,9 @@ enum ParseState {
     InEffectiveTime,
     InEntryRelationship,
     InObservation,
+    InText,
     InValue,
+    InOriginalText,
     InAuthor,
 }
 
@@ -139,6 +141,11 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             }
                         }
                     }
+                    b"text" => {
+                        if state == ParseState::InObservation {
+                            state = ParseState::InText;
+                        }
+                    }
                     b"value" => {
                         if state == ParseState::InObservation {
                             let code = get_attr(&e, b"code");
@@ -163,7 +170,12 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             if let Some(observation) = observation_stack.last_mut() {
                                 observation.value = obs_value;
                             }
-                            state = ParseState::InValue
+                            state = ParseState::InValue;
+                        }
+                    }
+                    b"originalText" => {
+                        if state == ParseState::InValue {
+                            state = ParseState::InOriginalText;
                         }
                     }
                     b"author" => state = ParseState::InAuthor,
@@ -222,7 +234,13 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             state = ParseState::InEntryRelationship;
                         }
                     },
+                    b"text" => {
+                        if state == ParseState::InText {
+                            state = ParseState::InObservation;
+                        }
+                    }
                     b"value" => state = ParseState::InObservation,
+                    b"originalText" => state = ParseState::InValue,
                     b"author" => state = ParseState::InObservation,
                     _ => {}
                 }
@@ -415,6 +433,20 @@ pub fn problem_section(file_path_str: &str) -> Section {
                         _ => {}
                     }
                 }
+                if state == ParseState::InText {
+                    match e.name().as_ref() {
+                        b"reference" => {
+                            let value = get_attr(&e, b"value");
+                            let reference = Some(Reference{
+                                value
+                            });
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.text = reference;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
                 if state == ParseState::InValue {
                     match e.name().as_ref() {
                         b"translation" => {
@@ -437,6 +469,22 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                     if let Some(value_code) =  observation_value.code.as_mut() {
                                         value_code.translations.push(code);
                                     }
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                if state == ParseState::InOriginalText {
+                    match e.name().as_ref() {
+                        b"reference" => {
+                            let value = get_attr(&e, b"value");
+                            let reference = Some(Reference{
+                                value
+                            });
+                            if let Some(observation) = observation_stack.last_mut() {
+                                if let Some(observation_value) =  observation.value.as_mut() {
+                                    observation_value.original_text = reference;
                                 }
                             }
                         }
