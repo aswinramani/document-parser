@@ -4,6 +4,7 @@ use std::io::BufReader;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use quick_xml::events::BytesStart;
+use quick_xml::XmlVersion;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation, Value};
 use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference, Author, AssignedAuthor};
 
@@ -27,7 +28,8 @@ fn get_attr(e: &BytesStart, attr: &str) -> Option<String> {
     return e.try_get_attribute(attr)
         .ok()
         .flatten()
-        .map(|a| a.value.into_owned());
+        .and_then(|a| a.normalized_value(XmlVersion::Implicit1_0).ok())
+        .map(|v| v.into_owned());
 }
 
 pub fn problem_section(file_path_str: &str) -> Section {
