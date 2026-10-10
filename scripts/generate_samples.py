@@ -18,7 +18,7 @@ import argparse
 import os
 import random
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
@@ -81,8 +81,8 @@ def rand_root():
     return f"2.16.840.1.113883.19.{random.randint(1, 9999)}"
 
 def rand_date(start_year=1940, end_year=1990):
-    start = datetime(start_year, 1, 1, tzinfo=timezone.utc)
-    end = datetime(end_year, 12, 31, tzinfo=timezone.utc)
+    start = datetime(start_year, 1, 1, tzinfo=UTC)
+    end = datetime(end_year, 12, 31, tzinfo=UTC)
     delta = end - start
     return (start + timedelta(days=random.randint(0, delta.days))).strftime("%Y%m%d")
 
