@@ -10,7 +10,7 @@ LOINC Coverage Status:
 
 ```
 document-parser/
-├── Cargo.toml          ← Rust's Manifest Configuration File 
+├── Cargo.toml          ← Cargo's Manifest Configuration File and strictly enforces only Tom's Obvious Minimal Language format.  
 ├── src/
 │   ├── main.rs         ← entry point, runs the parser against sample documents
 │   ├── parser/         ← streaming C-CDA parser using quick-xml
