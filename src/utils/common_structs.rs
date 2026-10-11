@@ -1,4 +1,7 @@
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Code {
     pub code: Option<String>,
     pub display_name: Option<String>,
@@ -9,6 +12,9 @@ pub struct Code {
     pub translations: Vec<Translation>,
 }
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Translation {
     pub xsi_type: Option<String>,
     pub code: Option<String>,
@@ -18,6 +24,9 @@ pub struct Translation {
     pub null_flavor: Option<String>,
 }
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct EffectiveTime {
     pub low: Option<String>,
     pub high: Option<String>,
@@ -26,17 +35,25 @@ pub struct EffectiveTime {
 }
 
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct BaseIdentifier {
     pub root: Option<String>,
     pub extension: Option<String>,
 }
-
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct PatientIdentifier {
     pub base_id: Option<BaseIdentifier>,
     pub assigning_authority_name: Option<String>,
 }
 
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct PersonName {
     pub prefix: Option<String>,
     pub suffix: Option<String>,
@@ -46,6 +63,9 @@ pub struct PersonName {
 }
 
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Address {
     pub address_use: Option<String>,
     pub street_address_line: Vec<String>,
@@ -56,11 +76,17 @@ pub struct Address {
 }
 
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Telecom {
     pub telecom_use: Option<String>,
     pub value: Option<String>,
 }
 
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Patient {
     pub ids: Vec<PatientIdentifier>,
     pub names: Vec<PersonName>,
@@ -73,19 +99,30 @@ pub struct Patient {
     pub ethnicity: Option<Code>,
 }
 
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Organization {
     pub ids: Vec<BaseIdentifier>,
     pub name: Option<String>,
     pub telecoms: Vec<Telecom>,
     pub addresses: Vec<Address>,
 }
+
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Author {
     pub template_id: Option<BaseIdentifier>,
     pub time: Option<EffectiveTime>,
     pub assigned_author: Option<AssignedAuthor>,
 }
+
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct AssignedAuthor {
     pub id: Option<BaseIdentifier>,
     pub code: Option<Code>,
@@ -94,6 +131,10 @@ pub struct AssignedAuthor {
     pub assigned_person: Option<PersonName>,
 }
 
+
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct DocumentMetadata {
     pub type_id: Option<BaseIdentifier>,
     pub template_ids: Vec<BaseIdentifier>,
@@ -108,7 +149,11 @@ pub struct DocumentMetadata {
     pub authors: Vec<Author>,
     pub custodian: Option<Organization>,
 }
+
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Reference {
     pub value: Option<String>,
 }

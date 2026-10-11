@@ -1,5 +1,7 @@
 use crate::utils::common_structs::{Address, Author, BaseIdentifier, Code, EffectiveTime, PersonName, Telecom, Reference};
-
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Section {
     pub template_ids: Vec<BaseIdentifier>,
     pub code: Option<Code>,
@@ -9,11 +11,17 @@ pub struct Section {
 }
 
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Entry {
     pub clinical_statement: Option<ClinicalStatement>,
 }
 
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub enum ClinicalStatement {
     EntryAct(EntryAct),
     // EntryObservation(EntryObservation),
@@ -22,6 +30,9 @@ pub enum ClinicalStatement {
 }
 
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct EntryAct {
     pub class_code: Option<String>,
     pub mood_code: Option<String>,
@@ -29,6 +40,9 @@ pub struct EntryAct {
 }
 
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct ActBody {
     pub template_ids: Vec<BaseIdentifier>,
     pub id: Option<BaseIdentifier>,
@@ -39,12 +53,18 @@ pub struct ActBody {
 }
 
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct EntryRelationship {
     pub type_code: Option<String>,
     pub observation: Option<Observation>,
 }
 
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Observation {
     pub class_code: Option<String>,
     pub mood_code: Option<String>,
@@ -60,6 +80,9 @@ pub struct Observation {
 }
 
 #[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Value {
     pub code: Option<Code>,
     pub original_text: Option<Reference>,
