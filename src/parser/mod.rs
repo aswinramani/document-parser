@@ -6,7 +6,7 @@ use quick_xml::events::Event;
 use quick_xml::events::BytesStart;
 use quick_xml::XmlVersion;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation, Value};
-use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference, Author, AssignedAuthor};
+use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference, Author, AssignedAuthor, Telecom, Address, PersonName};
 
 #[derive(Debug, PartialEq)]
 enum ParseState {
@@ -22,6 +22,7 @@ enum ParseState {
     InOriginalText,
     InAuthor,
     InAssignedAuthor,
+    InAssignedPerson,
 }
 
 fn get_attr(e: &BytesStart, attr: &str) -> Option<String> {
@@ -51,12 +52,16 @@ pub fn problem_section(file_path_str: &str) -> Section {
     let mut current_effective_time: Option<EffectiveTime> = None;
     let mut entry_relationship_stack: Vec<EntryRelationship> = Vec::new();
     let mut observation_stack: Vec<Observation> = Vec::new();
+    let mut current_text_field: Option<String> = None;
+    let mut current_address: Option<Address> = None;
+    let mut current_person_name: Option<PersonName> = None;
     loop {
         match xml.read_event_into(&mut buf) {
             // for error handling
             Err(e) => panic!("Error occured when parsing for {:?} where byte position = {}, error position = {}", e, xml.buffer_position(), xml.error_position()),
             // works for opening tag for example <act>
             Ok(Event::Start(e)) => {
+                current_text_field = Some(e.name().as_ref().to_string());
                 match e.name().as_ref() {
                     "section" => state = ParseState::InSection,
                     "entry" => {
@@ -183,11 +188,40 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     }
                     "author" => state = ParseState::InAuthor,
                     "assignedAuthor" => state = ParseState::InAssignedAuthor,
+                    "addr" => {
+                        let address_use = get_attr(&e, "use");
+                        current_address = Some(Address {
+                            address_use,
+                            street_address_line: Vec::new(),
+                            city: None,
+                            state: None,
+                            postal_code: None,
+                            country: None,
+                        });
+                    }
+                    "assignedPerson" => {
+                        if state == ParseState::InAssignedAuthor {
+                            state = ParseState::InAssignedPerson;
+                        }
+                    }
+                    "name" => {
+                        if state == ParseState::InAssignedPerson {
+                            let name_use = get_attr(&e, "use");
+                            current_person_name = Some(PersonName {
+                                prefix: None,
+                                suffix: None,
+                                family: None,
+                                name_use,
+                                given: Vec::new(),
+                            })
+                        }
+                    }
                     _ => {}
                 }
             }
             // works for closing tag for example </act>
             Ok(Event::End(e)) => {
+                current_text_field = None;
                 match e.name().as_ref() {
                     "section" => state = ParseState::Root,
                     "entry" => {
@@ -247,6 +281,25 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     "originalText" => state = ParseState::InValue,
                     "author" => state = ParseState::InObservation,
                     "assignedAuthor" => state = ParseState::InAuthor,
+                    "addr" => {
+                        if let Some(observation) = observation_stack.last_mut() {
+                            if let Some(author) = observation.author.as_mut() {
+                                if let Some(assigned) = author.assigned_author.as_mut() {
+                                    assigned.address = current_address.take();
+                                }
+                            }
+                        }
+                    }
+                    "assignedPerson" => state = ParseState::InAssignedAuthor,
+                    "name" => {
+                        if let Some(observation) = observation_stack.last_mut() {
+                            if let Some(author) = observation.author.as_mut() {
+                                if let Some(assigned) = author.assigned_author.as_mut() {
+                                    assigned.assigned_person = current_person_name.take();
+                                }
+                            }
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -579,6 +632,42 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 }
                             }
                         }
+                        "telecom" => {
+                            let value = get_attr(&e, "value");
+                            let telecom_use = get_attr(&e, "use");
+                            let telecom = Some(Telecom{
+                                telecom_use,
+                                value,
+                            });
+                            if let Some(observation) = observation_stack.last_mut() {
+                                if let Some(observation_author) =  observation.author.as_mut() {
+                                    if let Some(observation_assigned_author) = observation_author.assigned_author.as_mut() {
+                                        observation_assigned_author.telecom = telecom;
+                                    }
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            Ok(Event::Text(e)) => {
+                let text = e.xml10_content();
+                if let Some(address) = current_address.as_mut() {
+                    match current_text_field.as_deref() {
+                        Some("streetAddressLine") => address.street_address_line.push(text.into_owned()),
+                        Some("city") => address.city = Some(text.into_owned()),
+                        Some("state") => address.state = Some(text.into_owned()),
+                        Some("postalCode") => address.postal_code = Some(text.into_owned()),
+                        Some("country") => address.country = Some(text.into_owned()),
+                        _ => {}
+                    }
+                } else if let Some(person) = current_person_name.as_mut() {
+                    match current_text_field.as_deref() {
+                        Some("prefix") => person.prefix = Some(text.into_owned()),
+                        Some("suffix") => person.suffix = Some(text.into_owned()),
+                        Some("family") => person.family = Some(text.into_owned()),
+                        Some("given") => person.given.push(text.into_owned()),
                         _ => {}
                     }
                 }
