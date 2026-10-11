@@ -1,15 +1,6 @@
 # Rust
 target/
 
-# Kotlin
-kotlin/.idea/
-kotlin/build/
-kotlin/.gradle/
-
-# TypeScript
-typescript/node_modules/
-typescript/dist/
-
 # OS
 .DS_Store
 sample-documents/generated/
@@ -17,3 +8,5 @@ scripts/__pycache__/**
 
 # Env
 .env
+
+bindings/

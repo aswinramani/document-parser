@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 quick-xml = { version = "0.42.0", features = ["encoding"] }
+serde = { version = "1.0.229", features = ["derive"] }
+ts-rs = "12.0.1"
