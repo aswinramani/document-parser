@@ -1,4 +1,4 @@
-use crate::utils::common_structs::{Address, Author, BaseIdentifier, Code, EffectiveTime, PersonName, Telecom, Reference};
+use crate::utils::common_structs::{Address, Author, BaseIdentifier, Code, EffectiveTime, PersonName, Telecom, Reference, ValueContent};
 #[derive(serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
@@ -84,6 +84,6 @@ pub struct Observation {
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Value {
-    pub code: Option<Code>,
+    pub content: Option<ValueContent>,
     pub original_text: Option<Reference>,
 }
