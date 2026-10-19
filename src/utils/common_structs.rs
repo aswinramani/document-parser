@@ -157,3 +157,21 @@ pub struct DocumentMetadata {
 pub struct Reference {
     pub value: Option<String>,
 }
+
+#[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PhysicalQuantity {
+    pub value: Option<String>,
+    pub unit: Option<String>,
+}
+
+#[derive(Debug)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub enum ValueContent {
+    Coded(Code),
+    Quantity(PhysicalQuantity),
+}

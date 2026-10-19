@@ -6,7 +6,7 @@ use quick_xml::events::Event;
 use quick_xml::events::BytesStart;
 use quick_xml::XmlVersion;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation, Value};
-use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference, Author, AssignedAuthor, Telecom, Address, PersonName};
+use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference, Author, AssignedAuthor, Telecom, Address, PersonName, ValueContent, PhysicalQuantity};
 
 #[derive(Debug, PartialEq)]
 enum ParseState {
@@ -172,7 +172,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                                 xsi_type,
                             });
                             let obs_value = Some(Value{
-                                code,
+                                content: code.map(ValueContent::Coded),
                                 original_text: None,
                             });
                             if let Some(observation) = observation_stack.last_mut() {
@@ -465,29 +465,35 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             }
                         }
                         "value" => {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
                             let xsi_type = get_attr(&e, "xsi:type");
-                            let value_code = Some(Code{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                translations: Vec::new(),
-                                xsi_type,
-                            });
+                            let is_quantity = xsi_type.as_deref() == Some("PQ");
+                            let content = if is_quantity {
+                                let value = get_attr(&e, "value");
+                                let unit = get_attr(&e, "unit");
+                                Some(ValueContent::Quantity(PhysicalQuantity { value, unit }))
+                            } else {
+                                let code = get_attr(&e, "code");
+                                let code_system = get_attr(&e, "codeSystem");
+                                let display_name = get_attr(&e, "displayName");
+                                let code_system_name = get_attr(&e, "codeSystemName");
+                                let null_flavor = get_attr(&e, "nullFlavor");
+                                Some(ValueContent::Coded(Code {
+                                    code,
+                                    code_system,
+                                    display_name,
+                                    code_system_name,
+                                    null_flavor,
+                                    translations: Vec::new(),
+                                    xsi_type,
+                                }))
+                            };
                             if let Some(observation) = observation_stack.last_mut() {
                                 observation.value = Some(Value{
-                                    code: value_code,
+                                    content,
                                     original_text: None,
                                 });
                             }
                         }
-
                         _ => {}
                     }
                 }
@@ -524,7 +530,7 @@ pub fn problem_section(file_path_str: &str) -> Section {
                             };
                             if let Some(observation) = observation_stack.last_mut() {
                                 if let Some(observation_value) =  observation.value.as_mut() {
-                                    if let Some(value_code) =  observation_value.code.as_mut() {
+                                    if let Some(ValueContent::Coded(value_code)) =  observation_value.content.as_mut() {
                                         value_code.translations.push(code);
                                     }
                                 }
