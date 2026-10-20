@@ -1,5 +1,4 @@
-mod utils;
-mod parser;
+use clinical_document_parser::parser;
 
 fn init_problems() {
     let dir = "./sample-documents/problems/";

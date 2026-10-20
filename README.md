@@ -36,7 +36,8 @@ cargo clippy
 | Workflow | Runs on | What it does |
 |---|---|---|
 | `rust-static-analysis.yml` | push to `main`/`feat/**`/`fix/**`/`chore/**`/`dependabot/**`, PRs to `main`, weekly | `cargo clippy`, then CodeQL analysis for Rust |
-| `python-static-analysis.yml` | same triggers | installs deps with `uv`, compiles and lints `scripts/` with `ruff`, then CodeQL analysis for Python |
+| `parser-tests.yml` | push to `main`/`feat/**`/`fix/**`/`chore/**`/`dependabot/**`, PRs to `main` | `cargo test` — unit tests (`src/`) plus the integration tests in `tests/problems/` |
+| `python-static-analysis.yml` | same triggers as `rust-static-analysis.yml` | installs deps with `uv`, compiles and lints `scripts/` with `ruff`, then CodeQL analysis for Python |
 
 ## Dependabot
 
