@@ -1,0 +1,15 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, 'feat/**', 'fix/**', 'chore/**', 'dependabot/**' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run tests
+        run: cargo test
