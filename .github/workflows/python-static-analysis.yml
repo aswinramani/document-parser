@@ -2,7 +2,7 @@ name: Python Static Analysis
 
 on:
   push:
-    branches: [ main, 'feat/**', 'fix/**', 'chore/**', 'dependabot/**' ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
   schedule:
@@ -10,6 +10,12 @@ on:
 
 jobs:
   analyze:
+    if: |
+      github.event_name != 'pull_request' ||
+      startsWith(github.head_ref, 'feat/') ||
+      startsWith(github.head_ref, 'fix/') ||
+      startsWith(github.head_ref, 'chore/') ||
+      startsWith(github.head_ref, 'dependabot/')
     runs-on: ubuntu-latest
     permissions:
       security-events: write
