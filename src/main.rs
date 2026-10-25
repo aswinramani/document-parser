@@ -6,7 +6,9 @@ fn init_problems() {
         let path = entry.unwrap().path();
         if path.extension().and_then(|s| s.to_str()) == Some("xml") {
             println!("\n--- parsing {:?} ---", path.file_name().unwrap());
-            parser::problem_section(path.to_str().unwrap());
+            if let Err(e) = parser::problem_section(path.to_str().unwrap()) {
+                eprintln!("failed to parse {:?}: {e}", path.file_name().unwrap());
+            }
         }
     }
 }

@@ -1,3 +1,5 @@
+pub mod error;
+use error::ParseError;
 use std::path::Path;
 use std::fs::File;
 use std::io::BufReader;
@@ -7,7 +9,7 @@ use quick_xml::events::BytesStart;
 use quick_xml::XmlVersion;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation, Value};
 use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference, Author, AssignedAuthor, Telecom, Address, PersonName, ValueContent, PhysicalQuantity};
-
+ 
 #[derive(Debug, PartialEq)]
 enum ParseState {
     Root,
@@ -33,9 +35,12 @@ fn get_attr(e: &BytesStart, attr: &str) -> Option<String> {
         .map(|v| v.into_owned());
 }
 
-pub fn problem_section(file_path_str: &str) -> Section {
+pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
     let file_path = Path::new(file_path_str);
-    let file = File::open(file_path).expect("Unable to open check if file or path exists!");
+    let file = File::open(file_path).map_err(|source| ParseError::Io {
+        path: file_path_str.to_string(),
+        source,
+    })?;
     let reader = BufReader::new(file);
     let mut xml = Reader::from_reader(reader);
     let mut buf = Vec::new();
@@ -58,7 +63,10 @@ pub fn problem_section(file_path_str: &str) -> Section {
     loop {
         match xml.read_event_into(&mut buf) {
             // for error handling
-            Err(e) => panic!("Error occured when parsing for {:?} where byte position = {}, error position = {}", e, xml.buffer_position(), xml.error_position()),
+            Err(source) => return Err(ParseError::Xml {
+                position: xml.error_position(),
+                source,
+            }),
             // works for opening tag for example <act>
             Ok(Event::Start(e)) => {
                 current_text_field = Some(e.name().as_ref().to_string());
@@ -233,9 +241,9 @@ pub fn problem_section(file_path_str: &str) -> Section {
                     "act" =>{ 
                         state = ParseState::InEntry;
                         if let Some(entry) = &mut current_entry {
-                            entry.clinical_statement = Some(ClinicalStatement::EntryAct(
-                                current_act.take().unwrap()
-                            ));
+                            if let Some(act) = current_act.take() {
+                                entry.clinical_statement = Some(ClinicalStatement::EntryAct(act));
+                            }
                         }
                     }
                     "effectiveTime" => {
@@ -686,6 +694,6 @@ pub fn problem_section(file_path_str: &str) -> Section {
     }
     // println!("section.code {:?}", section.code);
     println!("section.entries {:?}", section.entries);
-    return section;
+    return Ok(section);
     // todo!()
 }
