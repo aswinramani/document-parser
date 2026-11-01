@@ -1,0 +1,37 @@
+<section>
+	<templateId root="2.16.840.1.113883.10.20.22.2.5.1"/>
+	<code code="11450-4" codeSystem="2.16.840.1.113883.6.1" displayName="Problem List"/>
+	<title>Problem List</title>
+	<entry>
+		<act classCode="ACT" moodCode="EVN">
+			<templateId root="2.16.840.1.113883.10.20.22.4.3"/>
+			<id root="outer-concern-act"/>
+			<code code="CONC" codeSystem="2.16.840.1.113883.5.6"/>
+			<statusCode code="active"/>
+			<effectiveTime>
+				<low value="20140302"/>
+			</effectiveTime>
+			<entryRelationship typeCode="SUBJ">
+				<observation classCode="OBS" moodCode="EVN">
+					<templateId root="2.16.840.1.113883.10.20.22.4.4"/>
+					<id root="problem-observation"/>
+					<statusCode code="completed"/>
+					<effectiveTime>
+						<low value="20140227"/>
+					</effectiveTime>
+					<value xsi:type="CD" code="385093006" codeSystem="2.16.840.1.113883.6.96" displayName="Community acquired pneumonia"/>
+					<entryRelationship typeCode="COMP">
+						<act classCode="ACT" moodCode="EVN">
+							<templateId root="2.16.840.1.113883.10.20.22.4.502"/>
+							<id root="date-of-diagnosis-act"/>
+							<code code="77975-1" codeSystem="2.16.840.1.113883.6.1" displayName="Date of diagnosis"/>
+							<effectiveTime>
+								<low value="20140301"/>
+							</effectiveTime>
+						</act>
+					</entryRelationship>
+				</observation>
+			</entryRelationship>
+		</act>
+	</entry>
+</section>

@@ -1,0 +1,24 @@
+<section>
+  <templateId root="2.16.840.1.113883.10.20.22.2.1.1" extension="2014-06-09"/>
+  <code code="10160-0" displayName="History of Medication use Narrative" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+  <title>Medications</title>
+  <text>Metformin 500 mg tablet, twice daily</text>
+  <entry typeCode="DRIV">
+    <substanceAdministration classCode="SBADM" moodCode="EVN">
+      <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09"/>
+      <id root="1.2.3.4" extension="med-1"/>
+      <statusCode code="active"/>
+      <effectiveTime xsi:type="IVL_TS">
+        <low value="20200315"/>
+      </effectiveTime>
+      <doseQuantity value="500" unit="mg"/>
+      <consumable>
+        <manufacturedProduct classCode="MANU">
+          <manufacturedMaterial>
+            <code code="860975" displayName="Metformin 500 MG Oral Tablet" codeSystem="2.16.840.1.113883.6.88" codeSystemName="RxNorm"/>
+          </manufacturedMaterial>
+        </manufacturedProduct>
+      </consumable>
+    </substanceAdministration>
+  </entry>
+</section>
