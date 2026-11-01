@@ -1,6 +1,6 @@
 use clinical_document_parser::parser::problem_section;
 use clinical_document_parser::utils::clinical_sections::{ClinicalStatement, ActBody, Observation};
-use clinical_document_parser::utils::common_structs::{ValueContent};
+use clinical_document_parser::utils::common_structs::{ValueContent, TimePoint};
 use crate::fixtures::{ACTIVE_PROBLEM, RESOLVED_PROBLEM, NESTED_RELATIONSHIPS};
 
 fn get_act_body(file: &str) -> ActBody {
@@ -30,8 +30,8 @@ fn active_problem_act_status_is_active() {
 fn resolved_problem_act_effective_time_has_low_and_high() {
     let act_body = get_act_body(RESOLVED_PROBLEM);
     let effective_time = act_body.effective_time.as_ref().unwrap();
-    assert_eq!(effective_time.low, Some("20140403124536-0500".to_string()));
-    assert_eq!(effective_time.high, Some("20140407102516-0500".to_string()));
+    assert_eq!(effective_time.low, Some(TimePoint::Value("20140403124536-0500".to_string())));
+    assert_eq!(effective_time.high, Some(TimePoint::Value("20140407102516-0500".to_string())));
 }
 
 #[test]

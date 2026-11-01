@@ -28,8 +28,8 @@ pub struct Translation {
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct EffectiveTime {
-    pub low: Option<String>,
-    pub high: Option<String>,
+    pub low: Option<TimePoint>,
+    pub high: Option<TimePoint>,
     pub null_flavor: Option<String>,
     pub value: Option<String>,
 }
@@ -174,4 +174,14 @@ pub struct PhysicalQuantity {
 pub enum ValueContent {
     Coded(Code),
     Quantity(PhysicalQuantity),
+}
+
+#[derive(Debug, PartialEq)]
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub enum TimePoint {
+    Value(String),
+    NullFlavor(String),
+    Unspecified,
 }

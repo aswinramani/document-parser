@@ -8,7 +8,7 @@ use quick_xml::events::Event;
 use quick_xml::events::BytesStart;
 use quick_xml::XmlVersion;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation, Value};
-use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference, Author, AssignedAuthor, Telecom, Address, PersonName, ValueContent, PhysicalQuantity};
+use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference, Author, AssignedAuthor, Telecom, Address, PersonName, ValueContent, PhysicalQuantity, TimePoint};
  
 #[derive(Debug, PartialEq)]
 enum ParseState {
@@ -34,6 +34,17 @@ fn get_attr(e: &BytesStart, attr: &str) -> Option<String> {
         .and_then(|a| a.normalized_value(XmlVersion::Implicit1_0).ok())
         .map(|v| v.into_owned());
 }
+
+fn get_time_point(e: &BytesStart) -> TimePoint {
+    if let Some(value) = get_attr(e, "value") {
+        TimePoint::Value(value)
+    } else if let Some(null_flavor) = get_attr(e, "nullFlavor") {
+        TimePoint::NullFlavor(null_flavor)
+    } else {
+        TimePoint::Unspecified
+    }
+}
+
 
 pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
     let file_path = Path::new(file_path_str);
@@ -407,15 +418,13 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                 if state == ParseState::InEffectiveTime {
                     match e.name().as_ref() {
                         "low" => {
-                            let low_value = get_attr(&e, "value");
                             if let Some(effective_time) = &mut current_effective_time {
-                                effective_time.low = low_value;
+                                effective_time.low = Some(get_time_point(&e));
                             }
                         }
                         "high" => {
-                            let high_value = get_attr(&e, "value");
                             if let Some(effective_time) = &mut current_effective_time {
-                                effective_time.high = high_value;
+                                effective_time.high = Some(get_time_point(&e));
                             }
                         }
                         _ => {}
@@ -582,13 +591,11 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                             }
                         }
                         "time" => {
-                            let low = get_attr(&e, "low");
-                            let high = get_attr(&e, "high");
-                            let null_flavor = get_attr(&e, "null_flavor");
+                            let null_flavor = get_attr(&e, "nullFlavor");
                             let value = get_attr(&e, "value");
                             let time = Some(EffectiveTime{
-                                low,
-                                high,
+                                low: None,
+                                high: None,
                                 null_flavor,
                                 value,
                             });
@@ -695,5 +702,4 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
     // println!("section.code {:?}", section.code);
     println!("section.entries {:?}", section.entries);
     return Ok(section);
-    // todo!()
 }
