@@ -45,6 +45,19 @@ fn get_time_point(e: &BytesStart) -> TimePoint {
     }
 }
 
+fn get_code(e: &BytesStart) -> Code {
+    Code {
+        code: get_attr(e, "code"),
+        code_system: get_attr(e, "codeSystem"),
+        display_name: get_attr(e, "displayName"),
+        code_system_name: get_attr(e, "codeSystemName"),
+        null_flavor: get_attr(e, "nullFlavor"),
+        translations: Vec::new(),
+        xsi_type: get_attr(e, "xsi:type"),
+    }
+}
+
+
 fn get_effective_time(e: &BytesStart) -> EffectiveTime {
     EffectiveTime {
         null_flavor: get_attr(e, "nullFlavor"),
@@ -155,24 +168,10 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         }
                     }
                     "code" => {
-                        if state == ParseState::InObservation {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let code = Some(Code{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                translations: Vec::new(),
-                                xsi_type: None,
-                            });
-                            if let Some(observation) = observation_stack.last_mut() {
-                                observation.code = code;
-                            }
+                        if state == ParseState::InObservation
+                            && let Some(observation) = observation_stack.last_mut()
+                        {
+                            observation.code = Some(get_code(&e));
                         }
                     }
                     "text" => {
@@ -182,27 +181,11 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                     }
                     "value" => {
                         if state == ParseState::InObservation {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let xsi_type = get_attr(&e, "xsi:type");
-                            let code = Some(Code{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                translations: Vec::new(),
-                                xsi_type,
-                            });
-                            let obs_value = Some(Value{
-                                content: code.map(ValueContent::Coded),
-                                original_text: None,
-                            });
                             if let Some(observation) = observation_stack.last_mut() {
-                                observation.value = obs_value;
+                                observation.value = Some(Value {
+                                    content: Some(ValueContent::Coded(get_code(&e))),
+                                    original_text: None,
+                                });
                             }
                             state = ParseState::InValue;
                         }
@@ -354,21 +337,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                             section.template_ids.push(template_id);
                         }
                         "code" => {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            section.code = Some(Code{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                translations: Vec::new(),
-                                xsi_type: None,
-                            });
-
+                            section.code = Some(get_code(&e));
                         }
                         _ => {}
                     }
@@ -400,24 +369,11 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                                 }
                         }
                         "code" => {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let code = Some(Code{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                translations: Vec::new(),
-                                xsi_type: None,
-                            });
                             if let Some(act) = act_stack.last_mut()
-                                && let Some(body) = &mut act.act_body {
-                                    body.code = code;
-                                }
+                                && let Some(body) = &mut act.act_body
+                            {
+                                body.code = Some(get_code(&e));
+                            }
                         }
                         "statusCode" => {
                             let code = get_attr(&e, "code");
@@ -508,20 +464,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                                 let unit = get_attr(&e, "unit");
                                 Some(ValueContent::Quantity(PhysicalQuantity { value, unit }))
                             } else {
-                                let code = get_attr(&e, "code");
-                                let code_system = get_attr(&e, "codeSystem");
-                                let display_name = get_attr(&e, "displayName");
-                                let code_system_name = get_attr(&e, "codeSystemName");
-                                let null_flavor = get_attr(&e, "nullFlavor");
-                                Some(ValueContent::Coded(Code {
-                                    code,
-                                    code_system,
-                                    display_name,
-                                    code_system_name,
-                                    null_flavor,
-                                    translations: Vec::new(),
-                                    xsi_type,
-                                }))
+                                Some(ValueContent::Coded(get_code(&e)))
                             };
                             if let Some(observation) = observation_stack.last_mut() {
                                 observation.value = Some(Value{
@@ -634,25 +577,13 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                                 }
                         }
                         "code" => {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let code = Some(Code{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                translations: Vec::new(),
-                                xsi_type: None,
-                            });
                             if let Some(observation) = observation_stack.last_mut()
-                                && let Some(observation_author) =  observation.author.as_mut()
-                                    && let Some(observation_assigned_author) = observation_author.assigned_author.as_mut() {
-                                        observation_assigned_author.code = code;
-                                    }
+                                && let Some(observation_author) = observation.author.as_mut()
+                                && let Some(observation_assigned_author) = observation_author.assigned_author.as_mut()
+                            {
+                                observation_assigned_author.code = Some(get_code(&e));
+                            }
+
                         }
                         "telecom" => {
                             let value = get_attr(&e, "value");
