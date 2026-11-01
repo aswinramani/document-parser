@@ -27,6 +27,12 @@ enum ParseState {
     InAssignedPerson,
 }
 
+const TEXT_ELEMENTS: [&str; 10] = [
+    "title", "streetAddressLine", "city", "state", "postalCode",
+    "country", "given", "family", "prefix", "suffix",
+];
+
+
 fn get_attr(e: &BytesStart, attr: &str) -> Option<String> {
     e.try_get_attribute(attr)
         .ok()
@@ -88,6 +94,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
     let mut xml = Reader::from_reader(reader);
     let mut buf = Vec::new();
     let mut text_buf = Vec::new();
+    let mut skip_buf = Vec::new();
     let mut state = ParseState::Root;
     let mut section = Section {
         template_ids: Vec::new(),
@@ -256,6 +263,15 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                                 given: Vec::new(),
                             })
                         }
+                    name if !TEXT_ELEMENTS.contains(&name) => {
+                        let end = e.to_end().into_owned();
+                        if let Err(source) = xml.read_to_end_into(end.name(), &mut skip_buf) {
+                            return Err(ParseError::Xml {
+                                position: xml.error_position(),
+                                source,
+                            });
+                        }
+                    }
                     _ => {}
                 }
             }

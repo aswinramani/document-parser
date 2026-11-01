@@ -1,7 +1,7 @@
 use clinical_document_parser::parser::problem_section;
 use clinical_document_parser::utils::clinical_sections::{ClinicalStatement, ActBody, Observation};
 use clinical_document_parser::utils::common_structs::{ValueContent, TimePoint};
-use crate::fixtures::{ACTIVE_PROBLEM, RESOLVED_PROBLEM, NESTED_RELATIONSHIPS, EFFECTIVE_TIME_FORMS, AUTHOR_WITHOUT_TEMPLATE_ID, DATE_OF_DIAGNOSIS, ACT_WITH_CHILDREN};
+use crate::fixtures::{ACTIVE_PROBLEM, RESOLVED_PROBLEM, NESTED_RELATIONSHIPS, EFFECTIVE_TIME_FORMS, AUTHOR_WITHOUT_TEMPLATE_ID, DATE_OF_DIAGNOSIS, ACT_WITH_CHILDREN, UNKNOWN_ELEMENTS_BASELINE, UNKNOWN_ELEMENTS};
 
 fn get_act_body(file: &str, index: usize) -> ActBody {
     let section = problem_section(file).unwrap();
@@ -213,3 +213,13 @@ fn section_text_keeps_the_narrative_markup() {
         "the wrapper tags are not part of the body"
     );
 }
+
+#[test]
+fn unknown_elements_do_not_change_the_result() {
+    let baseline = problem_section(UNKNOWN_ELEMENTS_BASELINE)
+        .expect("baseline should parse");
+    let with_unknown = problem_section(UNKNOWN_ELEMENTS)
+        .expect("document with unknown elements should parse");
+    assert_eq!(with_unknown, baseline);
+}
+
