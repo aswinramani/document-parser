@@ -45,6 +45,15 @@ fn get_time_point(e: &BytesStart) -> TimePoint {
     }
 }
 
+fn get_effective_time(e: &BytesStart) -> EffectiveTime {
+    EffectiveTime {
+        null_flavor: get_attr(e, "nullFlavor"),
+        value: get_attr(e, "value"),
+        low: None,
+        high: None,
+    }
+}
+
 
 pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
     let file_path = Path::new(file_path_str);
@@ -64,10 +73,12 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
         entries: Vec::new(),
     };
     let mut current_entry: Option<Entry> = None;
-    let mut current_act: Option<EntryAct> = None;
+    let mut act_stack: Vec<EntryAct> = Vec::new();
     let mut current_effective_time: Option<EffectiveTime> = None;
     let mut entry_relationship_stack: Vec<EntryRelationship> = Vec::new();
+    let mut entry_relationship_owners: Vec<bool> = Vec::new();
     let mut observation_stack: Vec<Observation> = Vec::new();
+    let mut effective_time_in_observation = false;
     let mut current_text_field: Option<String> = None;
     let mut current_address: Option<Address> = None;
     let mut current_person_name: Option<PersonName> = None;
@@ -93,7 +104,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         state = ParseState::InAct;
                         let class_code = get_attr(&e, "classCode");
                         let mood_code = get_attr(&e, "moodCode");
-                        current_act = Some(EntryAct {
+                        act_stack.push(EntryAct {
                             class_code,
                             mood_code,
                             act_body: Some(ActBody {
@@ -107,23 +118,19 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         });
                     }
                     "effectiveTime" => {
+                        effective_time_in_observation = state == ParseState::InObservation;
                         state = ParseState::InEffectiveTime;
-                        let null_flavor = get_attr(&e, "nullFlavor");
-                        let value = get_attr(&e, "value");
-                        current_effective_time = Some(EffectiveTime {
-                            null_flavor,
-                            value,
-                            low: None,
-                            high: None,
-                        });
+                        current_effective_time = Some(get_effective_time(&e));
                     }
                     "entryRelationship" => {
                         if state == ParseState::InAct || state == ParseState::InObservation {
+                            entry_relationship_owners.push(state == ParseState::InObservation);
                             state = ParseState::InEntryRelationship;
                             let type_code = get_attr(&e, "typeCode");
                             entry_relationship_stack.push(EntryRelationship {
                                 type_code,
                                 observation: None,
+                                act: None
                             });
                         }
                     }
@@ -205,7 +212,16 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                             state = ParseState::InOriginalText;
                         }
                     }
-                    "author" => state = ParseState::InAuthor,
+                    "author" => {
+                        state = ParseState::InAuthor;
+                        if let Some(observation) = observation_stack.last_mut() {
+                            observation.author = Some(Author {
+                                template_id: None,
+                                time: None,
+                                assigned_author: None,
+                            });
+                        }
+                    }
                     "assignedAuthor" => state = ParseState::InAssignedAuthor,
                     "addr" => {
                         let address_use = get_attr(&e, "use");
@@ -250,18 +266,23 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         }
                     }
                     "act" =>{ 
-                        state = ParseState::InEntry;
-                        if let Some(entry) = &mut current_entry {
-                            if let Some(act) = current_act.take() {
+                        if let Some(act) = act_stack.pop() {
+                            if let Some(relationship) = entry_relationship_stack.last_mut() {
+                                relationship.act = Some(act);
+                                state = ParseState::InEntryRelationship;
+                            } else if let Some(entry) = current_entry.as_mut() {
                                 entry.clinical_statement = Some(ClinicalStatement::EntryAct(act));
+                                state = ParseState::InEntry;
                             }
                         }
                     }
                     "effectiveTime" => {
-                        if let Some(observation) = observation_stack.last_mut() {
-                            observation.effective_time = current_effective_time.take();
-                            state = ParseState::InObservation;
-                        } else if let Some(act) = &mut current_act {
+                        if effective_time_in_observation {
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.effective_time = current_effective_time.take();
+                                state = ParseState::InObservation;
+                            }
+                        } else if let Some(act) = act_stack.last_mut() {
                             if let Some(body) = &mut act.act_body {
                                 body.effective_time = current_effective_time.take();
                             }
@@ -270,11 +291,14 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                     },
                     "entryRelationship" => {
                         if let Some(finished_entry_relationship) = entry_relationship_stack.pop() {
-                            if let Some(waiting_observation) = observation_stack.last_mut() {
-                                waiting_observation.entry_relationships.push(finished_entry_relationship);
+                            let owned_by_observation = entry_relationship_owners.pop().unwrap_or(false);
+                            if owned_by_observation {
+                                if let Some(waiting_observation) = observation_stack.last_mut() {
+                                    waiting_observation.entry_relationships.push(finished_entry_relationship);
+                                }
                                 state = ParseState::InObservation;
                             } else {
-                                if let Some(act) = &mut current_act {
+                                if let Some(act) = act_stack.last_mut() {
                                     if let Some(body) = &mut act.act_body {
                                         body.entry_relationships.push(finished_entry_relationship);
                                     }
@@ -364,7 +388,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                                 root,
                                 extension,
                             };
-                            if let Some(act) = &mut current_act {
+                            if let Some(act) = act_stack.last_mut() {
                                 if let Some(body) = &mut act.act_body {
                                     body.template_ids.push(template_id);
                                 }
@@ -377,7 +401,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                                 root,
                                 extension,
                             });
-                            if let Some(act) = &mut current_act {
+                            if let Some(act) = act_stack.last_mut() {
                                 if let Some(body) = &mut act.act_body {
                                     body.id = id;
                                 }
@@ -398,7 +422,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                                 translations: Vec::new(),
                                 xsi_type: None,
                             });
-                            if let Some(act) = &mut current_act {
+                            if let Some(act) = act_stack.last_mut() {
                                 if let Some(body) = &mut act.act_body {
                                     body.code = code;
                                 }
@@ -406,9 +430,16 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         }
                         "statusCode" => {
                             let code = get_attr(&e, "code");
-                            if let Some(act) = &mut current_act {
+                            if let Some(act) = act_stack.last_mut() {
                                 if let Some(body) = &mut act.act_body {
                                     body.status_code = code;
+                                }
+                            }
+                        }
+                        "effectiveTime" => {
+                            if let Some(act) = act_stack.last_mut() {
+                                if let Some(body) = &mut act.act_body {
+                                    body.effective_time = Some(get_effective_time(&e));
                                 }
                             }
                         }
@@ -511,6 +542,11 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                                 });
                             }
                         }
+                        "effectiveTime" => {
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.effective_time = Some(get_effective_time(&e));
+                            }
+                        }
                         _ => {}
                     }
                 }
@@ -577,17 +613,14 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         "templateId" => {
                             let root = get_attr(&e, "root");
                             let extension = get_attr(&e, "extension");
-                            let template_id = Some(BaseIdentifier{
+                             let template_id = Some(BaseIdentifier {
                                 root,
                                 extension,
                             });
-                            let author = Some(Author{
-                                template_id,
-                                time: None,
-                                assigned_author: None,
-                            });
                             if let Some(observation) = observation_stack.last_mut() {
-                                observation.author = author;
+                                if let Some(observation_author) = observation.author.as_mut() {
+                                    observation_author.template_id = template_id;
+                                }
                             }
                         }
                         "time" => {
@@ -691,6 +724,8 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         Some("given") => person.given.push(text.into_owned()),
                         _ => {}
                     }
+                } else if state == ParseState::InSection && current_text_field.as_deref() == Some("title") {
+                    section.title = Some(text.into_owned());
                 }
             }
             Ok(Event::Eof) => break,
@@ -699,7 +734,15 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
         }
         buf.clear();
     }
-    // println!("section.code {:?}", section.code);
-    println!("section.entries {:?}", section.entries);
+    let has_problems_code = section
+        .code
+        .as_ref()
+        .and_then(|c| c.code.as_deref())
+        == Some("11450-4");
+    if !has_problems_code {
+        return Err(ParseError::NoProblemsSection {
+            path: file_path_str.to_string(),
+        });
+    }
     return Ok(section);
 }

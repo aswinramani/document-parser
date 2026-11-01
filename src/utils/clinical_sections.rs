@@ -1,5 +1,6 @@
-use crate::utils::common_structs::{Address, Author, BaseIdentifier, Code, EffectiveTime, PersonName, Telecom, Reference, ValueContent};
-#[derive(serde::Serialize, ts_rs::TS)]
+use crate::utils::common_structs::{Author, BaseIdentifier, Code, EffectiveTime, Reference, ValueContent};
+
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Section {
@@ -10,16 +11,14 @@ pub struct Section {
     pub entries: Vec<Entry>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Entry {
     pub clinical_statement: Option<ClinicalStatement>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub enum ClinicalStatement {
@@ -29,8 +28,7 @@ pub enum ClinicalStatement {
     // Procedure(Procedure),
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct EntryAct {
@@ -39,8 +37,7 @@ pub struct EntryAct {
     pub act_body: Option<ActBody>, 
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct ActBody {
@@ -52,17 +49,16 @@ pub struct ActBody {
     pub entry_relationships: Vec<EntryRelationship>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct EntryRelationship {
     pub type_code: Option<String>,
     pub observation: Option<Observation>,
+    pub act: Option<EntryAct>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Observation {
@@ -79,8 +75,7 @@ pub struct Observation {
     pub entry_relationships: Vec<EntryRelationship>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Value {
