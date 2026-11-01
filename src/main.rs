@@ -4,11 +4,10 @@ fn init_problems() {
     let dir = "./sample-documents/problems/";
     for entry in std::fs::read_dir(dir).expect("could not read dir") {
         let path = entry.unwrap().path();
-        if path.extension().and_then(|s| s.to_str()) == Some("xml") {
-            if let Err(e) = parser::problem_section(path.to_str().unwrap()) {
+        if path.extension().and_then(|s| s.to_str()) == Some("xml")
+            && let Err(e) = parser::problem_section(path.to_str().unwrap()) {
                 eprintln!("failed to parse {:?}: {e}", path.file_name().unwrap());
             }
-        }
     }
 }
 

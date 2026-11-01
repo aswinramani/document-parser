@@ -16,9 +16,7 @@ fn base_id(root: &str, extension: Option<&str>) -> BaseIdentifier {
 
 #[test]
 fn active_problem_matches_expected_section() {
-    let actual = problem_section(ACTIVE_PROBLEM)
-        .ok()
-        .expect("activeProblem.xml should parse");
+    let actual = problem_section(ACTIVE_PROBLEM).expect("activeProblem.xml should parse");
 
     let expected = Section {
         template_ids: vec![
