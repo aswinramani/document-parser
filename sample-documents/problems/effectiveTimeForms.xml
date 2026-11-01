@@ -1,0 +1,29 @@
+<section>
+	<templateId root="2.16.840.1.113883.10.20.22.2.5.1"/>
+	<code code="11450-4" codeSystem="2.16.840.1.113883.6.1" displayName="Problem List"/>
+	<title>effectiveTime forms</title>
+
+	<!-- 0: act-level self-closing effectiveTime, nullFlavor -->
+	<entry><act classCode="ACT" moodCode="EVN"><effectiveTime nullFlavor="UNK"/><entryRelationship typeCode="SUBJ"><observation classCode="OBS" moodCode="EVN"><statusCode code="completed"/></observation></entryRelationship></act></entry>
+
+	<!-- 1: observation self-closing effectiveTime, value -->
+	<entry><act classCode="ACT" moodCode="EVN"><entryRelationship typeCode="SUBJ"><observation classCode="OBS" moodCode="EVN"><effectiveTime value="20140227"/><statusCode code="completed"/></observation></entryRelationship></act></entry>
+
+	<!-- 2: observation self-closing effectiveTime, nullFlavor -->
+	<entry><act classCode="ACT" moodCode="EVN"><entryRelationship typeCode="SUBJ"><observation classCode="OBS" moodCode="EVN"><effectiveTime nullFlavor="UNK"/><statusCode code="completed"/></observation></entryRelationship></act></entry>
+
+	<!-- 3: resolved, resolution date unknown: high nullFlavor -->
+	<entry><act classCode="ACT" moodCode="EVN"><entryRelationship typeCode="SUBJ"><observation classCode="OBS" moodCode="EVN"><effectiveTime><low value="20140227"/><high nullFlavor="UNK"/></effectiveTime><statusCode code="completed"/></observation></entryRelationship></act></entry>
+
+	<!-- 4: onset unknown: low nullFlavor -->
+	<entry><act classCode="ACT" moodCode="EVN"><entryRelationship typeCode="SUBJ"><observation classCode="OBS" moodCode="EVN"><effectiveTime><low nullFlavor="UNK"/></effectiveTime><statusCode code="completed"/></observation></entryRelationship></act></entry>
+
+	<!-- 5: bare high element (no attributes) -->
+	<entry><act classCode="ACT" moodCode="EVN"><entryRelationship typeCode="SUBJ"><observation classCode="OBS" moodCode="EVN"><effectiveTime><low value="20140227"/><high/></effectiveTime><statusCode code="completed"/></observation></entryRelationship></act></entry>
+
+	<!-- 6: high with both value and nullFlavor (invalid; value wins) -->
+	<entry><act classCode="ACT" moodCode="EVN"><entryRelationship typeCode="SUBJ"><observation classCode="OBS" moodCode="EVN"><effectiveTime><low value="20140227"/><high value="20140405" nullFlavor="UNK"/></effectiveTime><statusCode code="completed"/></observation></entryRelationship></act></entry>
+
+	<!-- 7: author time nullFlavor -->
+	<entry><act classCode="ACT" moodCode="EVN"><entryRelationship typeCode="SUBJ"><observation classCode="OBS" moodCode="EVN"><statusCode code="completed"/><author><templateId root="2.16.840.1.113883.10.20.22.4.119"/><time nullFlavor="UNK"/></author></observation></entryRelationship></act></entry>
+</section>

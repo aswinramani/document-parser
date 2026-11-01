@@ -14,4 +14,6 @@ pub enum ParseError {
         #[source]
         source: quick_xml::Error,
     },
+    #[error("no Problems section (LOINC 11450-4) found in {path}")]
+    NoProblemsSection { path: String },
 }

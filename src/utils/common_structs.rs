@@ -1,5 +1,4 @@
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Code {
@@ -11,8 +10,7 @@ pub struct Code {
     pub xsi_type: Option<String>,
     pub translations: Vec<Translation>,
 }
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Translation {
@@ -23,8 +21,7 @@ pub struct Translation {
     pub code_system_name: Option<String>,
     pub null_flavor: Option<String>,
 }
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct EffectiveTime {
@@ -34,15 +31,14 @@ pub struct EffectiveTime {
     pub value: Option<String>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct BaseIdentifier {
     pub root: Option<String>,
     pub extension: Option<String>,
 }
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct PatientIdentifier {
@@ -50,8 +46,7 @@ pub struct PatientIdentifier {
     pub assigning_authority_name: Option<String>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct PersonName {
@@ -62,8 +57,7 @@ pub struct PersonName {
     pub given: Vec<String>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Address {
@@ -75,8 +69,7 @@ pub struct Address {
     pub country: Option<String>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Telecom {
@@ -84,7 +77,7 @@ pub struct Telecom {
     pub value: Option<String>,
 }
 
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Patient {
@@ -99,7 +92,7 @@ pub struct Patient {
     pub ethnicity: Option<Code>,
 }
 
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Organization {
@@ -109,18 +102,16 @@ pub struct Organization {
     pub addresses: Vec<Address>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Author {
     pub template_id: Option<BaseIdentifier>,
-    pub time: Option<EffectiveTime>,
+    pub time: Option<TimePoint>,
     pub assigned_author: Option<AssignedAuthor>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct AssignedAuthor {
@@ -132,7 +123,7 @@ pub struct AssignedAuthor {
 }
 
 
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentMetadata {
@@ -150,16 +141,14 @@ pub struct DocumentMetadata {
     pub custodian: Option<Organization>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Reference {
     pub value: Option<String>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct PhysicalQuantity {
@@ -167,8 +156,7 @@ pub struct PhysicalQuantity {
     pub unit: Option<String>,
 }
 
-#[derive(Debug)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub enum ValueContent {
@@ -176,8 +164,7 @@ pub enum ValueContent {
     Quantity(PhysicalQuantity),
 }
 
-#[derive(Debug, PartialEq)]
-#[derive(serde::Serialize, ts_rs::TS)]
+#[derive(Debug, PartialEq, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub enum TimePoint {

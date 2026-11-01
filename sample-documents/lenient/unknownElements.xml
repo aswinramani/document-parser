@@ -1,0 +1,46 @@
+<section>
+	<templateId root="2.16.840.1.113883.10.20.22.2.5.1"/>
+	<code code="11450-4" codeSystem="2.16.840.1.113883.6.1" displayName="Problem List"/>
+	<title>Problem List</title>
+	<!-- unknown elements with unknown children -->
+	<sdtc:futureField foo="bar"><sdtc:inner>x</sdtc:inner></sdtc:futureField>
+	<!-- unknown wrapper whose children reuse known element names -->
+	<subject>
+		<id root="section-wrapper-id"/>
+		<code code="SECTION-WRAPPER" codeSystem="x"/>
+	</subject>
+	<entry>
+		<sdtc:marker/>
+		<act classCode="ACT" moodCode="EVN">
+			<id root="outer-concern-act"/>
+			<statusCode code="active"/>
+			<sdtc:note><sdtc:deep>y</sdtc:deep></sdtc:note>
+			<!-- unknown wrapper at act level -->
+			<performer typeCode="PRF">
+				<assignedEntity>
+					<id root="performer-id"/>
+					<code code="PERFORMER" codeSystem="x"/>
+					<statusCode code="performer-status"/>
+					<effectiveTime><low value="19000101"/></effectiveTime>
+				</assignedEntity>
+			</performer>
+			<entryRelationship typeCode="SUBJ">
+				<observation classCode="OBS" moodCode="EVN">
+					<id root="problem-observation"/>
+					<statusCode code="completed"/>
+					<sdtc:extra attr="1"><sdtc:more/></sdtc:extra>
+					<!-- unknown wrapper at observation level -->
+					<participant typeCode="LOC">
+						<participantRole>
+							<id root="participant-id"/>
+							<code code="LOCATION" codeSystem="x"/>
+							<templateId root="participant-template"/>
+							<statusCode code="participant-status"/>
+							<addr><city>Participant City</city></addr>
+						</participantRole>
+					</participant>
+				</observation>
+			</entryRelationship>
+		</act>
+	</entry>
+</section>

@@ -27,12 +27,18 @@ enum ParseState {
     InAssignedPerson,
 }
 
+const TEXT_ELEMENTS: [&str; 10] = [
+    "title", "streetAddressLine", "city", "state", "postalCode",
+    "country", "given", "family", "prefix", "suffix",
+];
+
+
 fn get_attr(e: &BytesStart, attr: &str) -> Option<String> {
-    return e.try_get_attribute(attr)
+    e.try_get_attribute(attr)
         .ok()
         .flatten()
         .and_then(|a| a.normalized_value(XmlVersion::Implicit1_0).ok())
-        .map(|v| v.into_owned());
+        .map(|v| v.into_owned())
 }
 
 fn get_time_point(e: &BytesStart) -> TimePoint {
@@ -45,6 +51,38 @@ fn get_time_point(e: &BytesStart) -> TimePoint {
     }
 }
 
+fn get_code(e: &BytesStart) -> Code {
+    Code {
+        code: get_attr(e, "code"),
+        code_system: get_attr(e, "codeSystem"),
+        display_name: get_attr(e, "displayName"),
+        code_system_name: get_attr(e, "codeSystemName"),
+        null_flavor: get_attr(e, "nullFlavor"),
+        translations: Vec::new(),
+        xsi_type: get_attr(e, "xsi:type"),
+    }
+}
+
+
+fn get_effective_time(e: &BytesStart) -> EffectiveTime {
+    EffectiveTime {
+        null_flavor: get_attr(e, "nullFlavor"),
+        value: get_attr(e, "value"),
+        low: None,
+        high: None,
+    }
+}
+
+fn get_translation(e: &BytesStart) -> Translation {
+    Translation {
+        code: get_attr(e, "code"),
+        code_system: get_attr(e, "codeSystem"),
+        display_name: get_attr(e, "displayName"),
+        code_system_name: get_attr(e, "codeSystemName"),
+        null_flavor: get_attr(e, "nullFlavor"),
+        xsi_type: get_attr(e, "xsi:type"),
+    }
+}
 
 pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
     let file_path = Path::new(file_path_str);
@@ -54,7 +92,10 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
     })?;
     let reader = BufReader::new(file);
     let mut xml = Reader::from_reader(reader);
+    xml.config_mut().expand_empty_elements = true;
     let mut buf = Vec::new();
+    let mut text_buf = Vec::new();
+    let mut skip_buf = Vec::new();
     let mut state = ParseState::Root;
     let mut section = Section {
         template_ids: Vec::new(),
@@ -64,10 +105,12 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
         entries: Vec::new(),
     };
     let mut current_entry: Option<Entry> = None;
-    let mut current_act: Option<EntryAct> = None;
+    let mut act_stack: Vec<EntryAct> = Vec::new();
     let mut current_effective_time: Option<EffectiveTime> = None;
     let mut entry_relationship_stack: Vec<EntryRelationship> = Vec::new();
+    let mut entry_relationship_owners: Vec<bool> = Vec::new();
     let mut observation_stack: Vec<Observation> = Vec::new();
+    let mut effective_time_in_observation = false;
     let mut current_text_field: Option<String> = None;
     let mut current_address: Option<Address> = None;
     let mut current_person_name: Option<PersonName> = None;
@@ -93,7 +136,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         state = ParseState::InAct;
                         let class_code = get_attr(&e, "classCode");
                         let mood_code = get_attr(&e, "moodCode");
-                        current_act = Some(EntryAct {
+                        act_stack.push(EntryAct {
                             class_code,
                             mood_code,
                             act_body: Some(ActBody {
@@ -107,23 +150,20 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         });
                     }
                     "effectiveTime" => {
+                        effective_time_in_observation = state == ParseState::InObservation;
                         state = ParseState::InEffectiveTime;
-                        let null_flavor = get_attr(&e, "nullFlavor");
-                        let value = get_attr(&e, "value");
-                        current_effective_time = Some(EffectiveTime {
-                            null_flavor,
-                            value,
-                            low: None,
-                            high: None,
-                        });
+                        current_effective_time = Some(get_effective_time(&e));
                     }
                     "entryRelationship" => {
                         if state == ParseState::InAct || state == ParseState::InObservation {
+                            entry_relationship_owners.push(state == ParseState::InObservation);
                             state = ParseState::InEntryRelationship;
                             let type_code = get_attr(&e, "typeCode");
                             entry_relationship_stack.push(EntryRelationship {
                                 type_code,
+                                inversion_ind: get_attr(&e, "inversionInd"),
                                 observation: None,
+                                act: None
                             });
                         }
                     }
@@ -148,54 +188,62 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         }
                     }
                     "code" => {
-                        if state == ParseState::InObservation {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let code = Some(Code{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                translations: Vec::new(),
-                                xsi_type: None,
-                            });
-                            if let Some(observation) = observation_stack.last_mut() {
-                                observation.code = code;
+                        let code = get_code(&e);
+                        match state {
+                            ParseState::InSection => section.code = Some(code),
+                            ParseState::InAct => {
+                                if let Some(act) = act_stack.last_mut()
+                                    && let Some(body) = &mut act.act_body {
+                                        body.code = Some(code);
+                                    }
                             }
+                            ParseState::InObservation => {
+                                if let Some(observation) = observation_stack.last_mut() {
+                                    observation.code = Some(code);
+                                }
+                            }
+                            ParseState::InAssignedAuthor => {
+                                if let Some(observation) = observation_stack.last_mut()
+                                    && let Some(observation_author) = observation.author.as_mut()
+                                    && let Some(assigned) = observation_author.assigned_author.as_mut() {
+                                        assigned.code = Some(code);
+                                    }
+                            }
+                            _ => {}
                         }
                     }
                     "text" => {
                         if state == ParseState::InObservation {
                             state = ParseState::InText;
+                        } else if state == ParseState::InSection {
+                            let end = e.to_end().into_owned();
+                            match xml.read_text_into(end.name(), &mut text_buf) {
+                                Ok(body) => section.text = Some(body.into_inner().into_owned()),
+                                Err(source) => {
+                                    return Err(ParseError::Xml {
+                                        position: xml.error_position(),
+                                        source,
+                                    });
+                                }
+                            }
                         }
                     }
                     "value" => {
                         if state == ParseState::InObservation {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let xsi_type = get_attr(&e, "xsi:type");
-                            let code = Some(Code{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                translations: Vec::new(),
-                                xsi_type,
-                            });
-                            let obs_value = Some(Value{
-                                content: code.map(ValueContent::Coded),
-                                original_text: None,
-                            });
+                            let is_quantity = get_attr(&e, "xsi:type").as_deref() == Some("PQ");
+                            let content = if is_quantity {
+                                Some(ValueContent::Quantity(PhysicalQuantity {
+                                    value: get_attr(&e, "value"),
+                                    unit: get_attr(&e, "unit"),
+                                }))
+                            } else {
+                                Some(ValueContent::Coded(get_code(&e)))
+                            };
                             if let Some(observation) = observation_stack.last_mut() {
-                                observation.value = obs_value;
+                                observation.value = Some(Value {
+                                    content,
+                                    original_text: None,
+                                });
                             }
                             state = ParseState::InValue;
                         }
@@ -205,7 +253,16 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                             state = ParseState::InOriginalText;
                         }
                     }
-                    "author" => state = ParseState::InAuthor,
+                    "author" => {
+                        state = ParseState::InAuthor;
+                        if let Some(observation) = observation_stack.last_mut() {
+                            observation.author = Some(Author {
+                                template_id: None,
+                                time: None,
+                                assigned_author: None,
+                            });
+                        }
+                    }
                     "assignedAuthor" => state = ParseState::InAssignedAuthor,
                     "addr" => {
                         let address_use = get_attr(&e, "use");
@@ -223,8 +280,163 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                             state = ParseState::InAssignedPerson;
                         }
                     }
-                    "name" => {
-                        if state == ParseState::InAssignedPerson {
+                    "templateId" => {
+                        let root = get_attr(&e, "root");
+                        let extension = get_attr(&e, "extension");
+                        let template_id = BaseIdentifier {
+                            root,
+                            extension,
+                        };
+                        match state {
+                            ParseState::InSection => section.template_ids.push(template_id),
+                            ParseState::InAct => {
+                                if let Some(act) = act_stack.last_mut()
+                                    && let Some(body) = &mut act.act_body {
+                                        body.template_ids.push(template_id);
+                                    }
+                            }
+                            ParseState::InObservation => {
+                                if let Some(observation) = observation_stack.last_mut() {
+                                    observation.template_ids.push(template_id);
+                                }
+                            }
+                            ParseState::InAuthor => {
+                                if let Some(observation) = observation_stack.last_mut()
+                                    && let Some(observation_author) = observation.author.as_mut() {
+                                        observation_author.template_id = Some(template_id);
+                                    }
+                            }
+                            _ => {}
+                        }
+                    }
+                    "id" => {
+                        let root = get_attr(&e, "root");
+                        let extension = get_attr(&e, "extension");
+                        let id = BaseIdentifier {
+                            root,
+                            extension,
+                        };
+                        match state {
+                            ParseState::InAct => {
+                                if let Some(act) = act_stack.last_mut()
+                                    && let Some(body) = &mut act.act_body {
+                                        body.id = Some(id);
+                                    }
+                            }
+                            ParseState::InObservation => {
+                                if let Some(observation) = observation_stack.last_mut() {
+                                    observation.id = Some(id);
+                                }
+                            }
+                            ParseState::InAssignedAuthor => {
+                                let assigned_author = Some(AssignedAuthor {
+                                    id: Some(id),
+                                    code: None,
+                                    address: None,
+                                    telecom: None,
+                                    assigned_person: None,
+                                });
+                                if let Some(observation) = observation_stack.last_mut()
+                                    && let Some(observation_author) = observation.author.as_mut() {
+                                        observation_author.assigned_author = assigned_author;
+                                    }
+                            }
+                            _ => {}
+                        }
+                    }
+                    "statusCode" => {
+                        let code = get_attr(&e, "code");
+                        match state {
+                            ParseState::InAct => {
+                                if let Some(act) = act_stack.last_mut()
+                                    && let Some(body) = &mut act.act_body {
+                                        body.status_code = code;
+                                    }
+                            }
+                            ParseState::InObservation => {
+                                if let Some(observation) = observation_stack.last_mut() {
+                                    observation.status_code = code;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    "low" => {
+                        if state == ParseState::InEffectiveTime
+                            && let Some(effective_time) = &mut current_effective_time
+                        {
+                            effective_time.low = Some(get_time_point(&e));
+                        }
+                    }
+                    "high" => {
+                        if state == ParseState::InEffectiveTime
+                            && let Some(effective_time) = &mut current_effective_time
+                        {
+                            effective_time.high = Some(get_time_point(&e));
+                        }
+                    }
+                    "reference" => {
+                        let reference = Some(Reference {
+                            value: get_attr(&e, "value"),
+                        });
+                        match state {
+                            ParseState::InText => {
+                                if let Some(observation) = observation_stack.last_mut() {
+                                    observation.text = reference;
+                                }
+                            }
+                            ParseState::InOriginalText => {
+                                if let Some(observation) = observation_stack.last_mut()
+                                    && let Some(observation_value) = observation.value.as_mut() {
+                                        observation_value.original_text = reference;
+                                    }
+                            }
+                            _ => {}
+                        }
+                    }
+                    "translation" => {
+                        match state {
+                            ParseState::InObservation => {
+                                if let Some(observation) = observation_stack.last_mut()
+                                    && let Some(observation_code) = observation.code.as_mut()
+                                {
+                                    observation_code.translations.push(get_translation(&e));
+                                }
+                            }
+                            ParseState::InValue => {
+                                if let Some(observation) = observation_stack.last_mut()
+                                    && let Some(observation_value) = observation.value.as_mut()
+                                    && let Some(ValueContent::Coded(value_code)) = observation_value.content.as_mut()
+                                {
+                                    value_code.translations.push(get_translation(&e));
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    "time" => {
+                        if state == ParseState::InAuthor
+                            && let Some(observation) = observation_stack.last_mut()
+                            && let Some(observation_author) = observation.author.as_mut()
+                        {
+                            observation_author.time = Some(get_time_point(&e));
+                        }
+                    }
+                    "telecom" => {
+                        if state == ParseState::InAssignedAuthor {
+                            let telecom = Some(Telecom {
+                                telecom_use: get_attr(&e, "use"),
+                                value: get_attr(&e, "value"),
+                            });
+                            if let Some(observation) = observation_stack.last_mut()
+                                && let Some(observation_author) = observation.author.as_mut()
+                                && let Some(observation_assigned_author) = observation_author.assigned_author.as_mut() {
+                                    observation_assigned_author.telecom = telecom;
+                                }
+                        }
+                    }
+                    "name"
+                        if state == ParseState::InAssignedPerson => {
                             let name_use = get_attr(&e, "use");
                             current_person_name = Some(PersonName {
                                 prefix: None,
@@ -233,6 +445,14 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                                 name_use,
                                 given: Vec::new(),
                             })
+                        }
+                    name if !TEXT_ELEMENTS.contains(&name) => {
+                        let end = e.to_end().into_owned();
+                        if let Err(source) = xml.read_to_end_into(end.name(), &mut skip_buf) {
+                            return Err(ParseError::Xml {
+                                position: xml.error_position(),
+                                source,
+                            });
                         }
                     }
                     _ => {}
@@ -250,18 +470,23 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         }
                     }
                     "act" =>{ 
-                        state = ParseState::InEntry;
-                        if let Some(entry) = &mut current_entry {
-                            if let Some(act) = current_act.take() {
+                        if let Some(act) = act_stack.pop() {
+                            if let Some(relationship) = entry_relationship_stack.last_mut() {
+                                relationship.act = Some(act);
+                                state = ParseState::InEntryRelationship;
+                            } else if let Some(entry) = current_entry.as_mut() {
                                 entry.clinical_statement = Some(ClinicalStatement::EntryAct(act));
+                                state = ParseState::InEntry;
                             }
                         }
                     }
                     "effectiveTime" => {
-                        if let Some(observation) = observation_stack.last_mut() {
-                            observation.effective_time = current_effective_time.take();
-                            state = ParseState::InObservation;
-                        } else if let Some(act) = &mut current_act {
+                        if effective_time_in_observation {
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.effective_time = current_effective_time.take();
+                                state = ParseState::InObservation;
+                            }
+                        } else if let Some(act) = act_stack.last_mut() {
                             if let Some(body) = &mut act.act_body {
                                 body.effective_time = current_effective_time.take();
                             }
@@ -270,15 +495,17 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                     },
                     "entryRelationship" => {
                         if let Some(finished_entry_relationship) = entry_relationship_stack.pop() {
-                            if let Some(waiting_observation) = observation_stack.last_mut() {
-                                waiting_observation.entry_relationships.push(finished_entry_relationship);
+                            let owned_by_observation = entry_relationship_owners.pop().unwrap_or(false);
+                            if owned_by_observation {
+                                if let Some(waiting_observation) = observation_stack.last_mut() {
+                                    waiting_observation.entry_relationships.push(finished_entry_relationship);
+                                }
                                 state = ParseState::InObservation;
                             } else {
-                                if let Some(act) = &mut current_act {
-                                    if let Some(body) = &mut act.act_body {
+                                if let Some(act) = act_stack.last_mut()
+                                    && let Some(body) = &mut act.act_body {
                                         body.entry_relationships.push(finished_entry_relationship);
                                     }
-                                }
                                 state = ParseState::InAct;
                             }
                         }
@@ -301,375 +528,21 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                     "author" => state = ParseState::InObservation,
                     "assignedAuthor" => state = ParseState::InAuthor,
                     "addr" => {
-                        if let Some(observation) = observation_stack.last_mut() {
-                            if let Some(author) = observation.author.as_mut() {
-                                if let Some(assigned) = author.assigned_author.as_mut() {
+                        if let Some(observation) = observation_stack.last_mut()
+                            && let Some(author) = observation.author.as_mut()
+                                && let Some(assigned) = author.assigned_author.as_mut() {
                                     assigned.address = current_address.take();
                                 }
-                            }
-                        }
                     }
                     "assignedPerson" => state = ParseState::InAssignedAuthor,
                     "name" => {
-                        if let Some(observation) = observation_stack.last_mut() {
-                            if let Some(author) = observation.author.as_mut() {
-                                if let Some(assigned) = author.assigned_author.as_mut() {
+                        if let Some(observation) = observation_stack.last_mut()
+                            && let Some(author) = observation.author.as_mut()
+                                && let Some(assigned) = author.assigned_author.as_mut() {
                                     assigned.assigned_person = current_person_name.take();
                                 }
-                            }
-                        }
                     }
                     _ => {}
-                }
-            }
-            // works for self-closing tag for example <templateId/>
-            Ok(Event::Empty(e)) => {
-                if state == ParseState::InSection {
-                    match e.name().as_ref() {
-                        "templateId" => {
-                            let root = get_attr(&e, "root");
-                            let extension = get_attr(&e, "extension");
-                            let template_id = BaseIdentifier {
-                                root,
-                                extension,
-                            };
-                            section.template_ids.push(template_id);
-                        }
-                        "code" => {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            section.code = Some(Code{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                translations: Vec::new(),
-                                xsi_type: None,
-                            });
-
-                        }
-                        _ => {}
-                    }
-                }
-                if state == ParseState::InAct {
-                    match e.name().as_ref() {
-                        "templateId" => {
-                            let root = get_attr(&e, "root");
-                            let extension = get_attr(&e, "extension");
-                            let template_id = BaseIdentifier {
-                                root,
-                                extension,
-                            };
-                            if let Some(act) = &mut current_act {
-                                if let Some(body) = &mut act.act_body {
-                                    body.template_ids.push(template_id);
-                                }
-                            }
-                        }
-                        "id" => {
-                            let root = get_attr(&e, "root");
-                            let extension = get_attr(&e, "extension");
-                            let id = Some(BaseIdentifier {
-                                root,
-                                extension,
-                            });
-                            if let Some(act) = &mut current_act {
-                                if let Some(body) = &mut act.act_body {
-                                    body.id = id;
-                                }
-                            }
-                        }
-                        "code" => {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let code = Some(Code{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                translations: Vec::new(),
-                                xsi_type: None,
-                            });
-                            if let Some(act) = &mut current_act {
-                                if let Some(body) = &mut act.act_body {
-                                    body.code = code;
-                                }
-                            }
-                        }
-                        "statusCode" => {
-                            let code = get_attr(&e, "code");
-                            if let Some(act) = &mut current_act {
-                                if let Some(body) = &mut act.act_body {
-                                    body.status_code = code;
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                if state == ParseState::InEffectiveTime {
-                    match e.name().as_ref() {
-                        "low" => {
-                            if let Some(effective_time) = &mut current_effective_time {
-                                effective_time.low = Some(get_time_point(&e));
-                            }
-                        }
-                        "high" => {
-                            if let Some(effective_time) = &mut current_effective_time {
-                                effective_time.high = Some(get_time_point(&e));
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                if state == ParseState::InObservation {
-                    match e.name().as_ref() {
-                        "templateId" => {
-                            let root = get_attr(&e, "root");
-                            let extension = get_attr(&e, "extension");
-                            let template_id = BaseIdentifier {
-                                root,
-                                extension,
-                            };
-                            if let Some(observation) = observation_stack.last_mut() {
-                                observation.template_ids.push(template_id);
-                            }
-                        }
-                        "id" => {
-                            let root = get_attr(&e, "root");
-                            let extension = get_attr(&e, "extension");
-                            let id = Some(BaseIdentifier {
-                                root,
-                                extension,
-                            });
-                            if let Some(observation) = observation_stack.last_mut() {
-                                observation.id = id;
-                            }
-                        }
-                        "statusCode" => {
-                            let code = get_attr(&e, "code");
-                            if let Some(observation) = observation_stack.last_mut() {
-                                observation.status_code = code;
-                            }
-                        }
-                        "translation" => {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let xsi_type = get_attr(&e, "xsi:type");
-                            let code = Translation{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                xsi_type,
-                            };
-                            if let Some(observation) = observation_stack.last_mut() {
-                                if let Some(observation_code) =  observation.code.as_mut() {
-                                    observation_code.translations.push(code);
-                                }
-                            }
-                        }
-                        "value" => {
-                            let xsi_type = get_attr(&e, "xsi:type");
-                            let is_quantity = xsi_type.as_deref() == Some("PQ");
-                            let content = if is_quantity {
-                                let value = get_attr(&e, "value");
-                                let unit = get_attr(&e, "unit");
-                                Some(ValueContent::Quantity(PhysicalQuantity { value, unit }))
-                            } else {
-                                let code = get_attr(&e, "code");
-                                let code_system = get_attr(&e, "codeSystem");
-                                let display_name = get_attr(&e, "displayName");
-                                let code_system_name = get_attr(&e, "codeSystemName");
-                                let null_flavor = get_attr(&e, "nullFlavor");
-                                Some(ValueContent::Coded(Code {
-                                    code,
-                                    code_system,
-                                    display_name,
-                                    code_system_name,
-                                    null_flavor,
-                                    translations: Vec::new(),
-                                    xsi_type,
-                                }))
-                            };
-                            if let Some(observation) = observation_stack.last_mut() {
-                                observation.value = Some(Value{
-                                    content,
-                                    original_text: None,
-                                });
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                if state == ParseState::InText {
-                    match e.name().as_ref() {
-                        "reference" => {
-                            let value = get_attr(&e, "value");
-                            let reference = Some(Reference{
-                                value
-                            });
-                            if let Some(observation) = observation_stack.last_mut() {
-                                observation.text = reference;
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                if state == ParseState::InValue {
-                    match e.name().as_ref() {
-                        "translation" => {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let xsi_type = get_attr(&e, "xsi:type");
-                            let code = Translation{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                xsi_type,
-                            };
-                            if let Some(observation) = observation_stack.last_mut() {
-                                if let Some(observation_value) =  observation.value.as_mut() {
-                                    if let Some(ValueContent::Coded(value_code)) =  observation_value.content.as_mut() {
-                                        value_code.translations.push(code);
-                                    }
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                if state == ParseState::InOriginalText {
-                    match e.name().as_ref() {
-                        "reference" => {
-                            let value = get_attr(&e, "value");
-                            let reference = Some(Reference{
-                                value
-                            });
-                            if let Some(observation) = observation_stack.last_mut() {
-                                if let Some(observation_value) =  observation.value.as_mut() {
-                                    observation_value.original_text = reference;
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                if state == ParseState::InAuthor {
-                    match e.name().as_ref() {
-                        "templateId" => {
-                            let root = get_attr(&e, "root");
-                            let extension = get_attr(&e, "extension");
-                            let template_id = Some(BaseIdentifier{
-                                root,
-                                extension,
-                            });
-                            let author = Some(Author{
-                                template_id,
-                                time: None,
-                                assigned_author: None,
-                            });
-                            if let Some(observation) = observation_stack.last_mut() {
-                                observation.author = author;
-                            }
-                        }
-                        "time" => {
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let value = get_attr(&e, "value");
-                            let time = Some(EffectiveTime{
-                                low: None,
-                                high: None,
-                                null_flavor,
-                                value,
-                            });
-                            if let Some(observation) = observation_stack.last_mut() {
-                                if let Some(observation_author) =  observation.author.as_mut() {
-                                    observation_author.time = time;
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                if state == ParseState::InAssignedAuthor {
-                    match e.name().as_ref() {
-                        "id" => {
-                            let root = get_attr(&e, "root");
-                            let extension = get_attr(&e, "extension");
-                            let id = Some(BaseIdentifier{
-                                root,
-                                extension,
-                            });
-                            let assigned_author = Some(AssignedAuthor{
-                                id,
-                                code: None,
-                                address: None,
-                                telecom: None,
-                                assigned_person: None,
-                            });
-                            if let Some(observation) = observation_stack.last_mut() {
-                                if let Some(observation_author) =  observation.author.as_mut() {
-                                    observation_author.assigned_author = assigned_author;
-                                }
-                            }
-                        }
-                        "code" => {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let code = Some(Code{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                translations: Vec::new(),
-                                xsi_type: None,
-                            });
-                            if let Some(observation) = observation_stack.last_mut() {
-                                if let Some(observation_author) =  observation.author.as_mut() {
-                                    if let Some(observation_assigned_author) = observation_author.assigned_author.as_mut() {
-                                        observation_assigned_author.code = code;
-                                    }
-                                }
-                            }
-                        }
-                        "telecom" => {
-                            let value = get_attr(&e, "value");
-                            let telecom_use = get_attr(&e, "use");
-                            let telecom = Some(Telecom{
-                                telecom_use,
-                                value,
-                            });
-                            if let Some(observation) = observation_stack.last_mut() {
-                                if let Some(observation_author) =  observation.author.as_mut() {
-                                    if let Some(observation_assigned_author) = observation_author.assigned_author.as_mut() {
-                                        observation_assigned_author.telecom = telecom;
-                                    }
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
                 }
             }
             Ok(Event::Text(e)) => {
@@ -691,6 +564,8 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         Some("given") => person.given.push(text.into_owned()),
                         _ => {}
                     }
+                } else if state == ParseState::InSection && current_text_field.as_deref() == Some("title") {
+                    section.title = Some(text.into_owned());
                 }
             }
             Ok(Event::Eof) => break,
@@ -699,7 +574,15 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
         }
         buf.clear();
     }
-    // println!("section.code {:?}", section.code);
-    println!("section.entries {:?}", section.entries);
-    return Ok(section);
+    let has_problems_code = section
+        .code
+        .as_ref()
+        .and_then(|c| c.code.as_deref())
+        == Some("11450-4");
+    if !has_problems_code {
+        return Err(ParseError::NoProblemsSection {
+            path: file_path_str.to_string(),
+        });
+    }
+    Ok(section)
 }

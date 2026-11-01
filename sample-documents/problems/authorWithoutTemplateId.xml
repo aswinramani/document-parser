@@ -1,0 +1,27 @@
+<section>
+	<templateId root="2.16.840.1.113883.10.20.22.2.5.1"/>
+	<code code="11450-4" codeSystem="2.16.840.1.113883.6.1" displayName="Problem List"/>
+	<title>Problem List</title>
+	<entry>
+		<act classCode="ACT" moodCode="EVN">
+			<statusCode code="active"/>
+			<entryRelationship typeCode="SUBJ">
+				<observation classCode="OBS" moodCode="EVN">
+					<statusCode code="completed"/>
+					<author>
+						<time value="20140302124536"/>
+						<assignedAuthor>
+							<id extension="66666" root="2.16.840.1.113883.4.6"/>
+							<assignedPerson>
+								<name>
+									<given>Heartly</given>
+									<family>Sixer</family>
+								</name>
+							</assignedPerson>
+						</assignedAuthor>
+					</author>
+				</observation>
+			</entryRelationship>
+		</act>
+	</entry>
+</section>
