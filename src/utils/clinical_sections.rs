@@ -54,6 +54,7 @@ pub struct ActBody {
 #[serde(rename_all = "camelCase")]
 pub struct EntryRelationship {
     pub type_code: Option<String>,
+    pub inversion_ind: Option<String>,
     pub observation: Option<Observation>,
     pub act: Option<EntryAct>,
 }

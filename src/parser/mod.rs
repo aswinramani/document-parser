@@ -67,6 +67,16 @@ fn get_effective_time(e: &BytesStart) -> EffectiveTime {
     }
 }
 
+fn get_translation(e: &BytesStart) -> Translation {
+    Translation {
+        code: get_attr(e, "code"),
+        code_system: get_attr(e, "codeSystem"),
+        display_name: get_attr(e, "displayName"),
+        code_system_name: get_attr(e, "codeSystemName"),
+        null_flavor: get_attr(e, "nullFlavor"),
+        xsi_type: get_attr(e, "xsi:type"),
+    }
+}
 
 pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
     let file_path = Path::new(file_path_str);
@@ -142,6 +152,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                             let type_code = get_attr(&e, "typeCode");
                             entry_relationship_stack.push(EntryRelationship {
                                 type_code,
+                                inversion_ind: get_attr(&e, "inversionInd"),
                                 observation: None,
                                 act: None
                             });
@@ -430,6 +441,11 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                                 observation.id = id;
                             }
                         }
+                        "code" => {
+                            if let Some(observation) = observation_stack.last_mut() {
+                                observation.code = Some(get_code(&e));
+                            }
+                        }
                         "statusCode" => {
                             let code = get_attr(&e, "code");
                             if let Some(observation) = observation_stack.last_mut() {
@@ -437,24 +453,11 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                             }
                         }
                         "translation" => {
-                            let code = get_attr(&e, "code");
-                            let code_system = get_attr(&e, "codeSystem");
-                            let display_name = get_attr(&e, "displayName");
-                            let code_system_name = get_attr(&e, "codeSystemName");
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let xsi_type = get_attr(&e, "xsi:type");
-                            let code = Translation{
-                                code,
-                                code_system,
-                                display_name,
-                                code_system_name,
-                                null_flavor,
-                                xsi_type,
-                            };
                             if let Some(observation) = observation_stack.last_mut()
-                                && let Some(observation_code) =  observation.code.as_mut() {
-                                    observation_code.translations.push(code);
-                                }
+                                && let Some(observation_code) = observation.code.as_mut()
+                            {
+                                observation_code.translations.push(get_translation(&e));
+                            }
                         }
                         "value" => {
                             let xsi_type = get_attr(&e, "xsi:type");
@@ -492,27 +495,13 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                         }
                     }
                 if state == ParseState::InValue
-                    && e.name().as_ref() == "translation" {
-                        let code = get_attr(&e, "code");
-                        let code_system = get_attr(&e, "codeSystem");
-                        let display_name = get_attr(&e, "displayName");
-                        let code_system_name = get_attr(&e, "codeSystemName");
-                        let null_flavor = get_attr(&e, "nullFlavor");
-                        let xsi_type = get_attr(&e, "xsi:type");
-                        let code = Translation{
-                            code,
-                            code_system,
-                            display_name,
-                            code_system_name,
-                            null_flavor,
-                            xsi_type,
-                        };
-                        if let Some(observation) = observation_stack.last_mut()
-                            && let Some(observation_value) =  observation.value.as_mut()
-                                && let Some(ValueContent::Coded(value_code)) =  observation_value.content.as_mut() {
-                                    value_code.translations.push(code);
-                                }
-                    }
+                    && e.name().as_ref() == "translation"
+                    && let Some(observation) = observation_stack.last_mut()
+                    && let Some(observation_value) = observation.value.as_mut()
+                    && let Some(ValueContent::Coded(value_code)) = observation_value.content.as_mut()
+                {
+                    value_code.translations.push(get_translation(&e));
+                }
                 if state == ParseState::InOriginalText
                     && e.name().as_ref() == "reference" {
                         let value = get_attr(&e, "value");
