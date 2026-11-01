@@ -199,3 +199,18 @@ fn act_inside_observation_keeps_its_own_entry_relationships() {
         Some("inner-observation")
     );
 }
+
+#[test]
+fn section_text_keeps_the_narrative_markup() {
+    let section = problem_section(RESOLVED_PROBLEM).expect("resolvedProblem.xml should parse");
+    let text = section.text.expect("section text should be captured");
+
+    assert!(text.contains("<table>"));
+    assert!(text.contains(r#"<tr ID="Problem1">"#));
+    assert!(text.contains("Acute pharyngitis"));
+    assert!(text.contains("<br />"));
+    assert!(
+        !text.contains("<text>") && !text.contains("</text>"),
+        "the wrapper tags are not part of the body"
+    );
+}

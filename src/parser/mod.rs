@@ -87,6 +87,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
     let reader = BufReader::new(file);
     let mut xml = Reader::from_reader(reader);
     let mut buf = Vec::new();
+    let mut text_buf = Vec::new();
     let mut state = ParseState::Root;
     let mut section = Section {
         template_ids: Vec::new(),
@@ -188,6 +189,17 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                     "text" => {
                         if state == ParseState::InObservation {
                             state = ParseState::InText;
+                        } else if state == ParseState::InSection {
+                            let end = e.to_end().into_owned();
+                            match xml.read_text_into(end.name(), &mut text_buf) {
+                                Ok(body) => section.text = Some(body.into_inner().into_owned()),
+                                Err(source) => {
+                                    return Err(ParseError::Xml {
+                                        position: xml.error_position(),
+                                        source,
+                                    });
+                                }
+                            }
                         }
                     }
                     "value" => {

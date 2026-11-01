@@ -14,10 +14,22 @@ fn base_id(root: &str, extension: Option<&str>) -> BaseIdentifier {
     }
 }
 
+fn take_narrative(section: &mut Section, expected_snippet: &str) {
+    let text = section
+        .text
+        .take()
+        .expect("section text should be captured");
+    assert!(
+        text.contains(expected_snippet),
+        "narrative should contain {expected_snippet:?}, got: {text}"
+    );
+}
+
+
 #[test]
 fn active_problem_matches_expected_section() {
-    let actual = problem_section(ACTIVE_PROBLEM).expect("activeProblem should parse");
-
+    let mut actual = problem_section(ACTIVE_PROBLEM).expect("activeProblem should parse");
+    take_narrative(&mut actual, "Community Acquired Pneumonia");
     let expected = Section {
         template_ids: vec![
             base_id("2.16.840.1.113883.10.20.22.2.5.1", None),
@@ -272,8 +284,8 @@ fn date_of_diagnosis_matches_expected_section() {
 
 #[test]
 fn resolved_problem_matches_expected_section() {
-    let actual = problem_section(RESOLVED_PROBLEM).expect("resolvedProblem should parse");
-
+    let mut actual = problem_section(RESOLVED_PROBLEM).expect("resolvedProblem should parse");
+    take_narrative(&mut actual, "Acute pharyngitis");
     let expected = Section {
         template_ids: vec![
             base_id("2.16.840.1.113883.10.20.22.2.5.1", None),
@@ -434,8 +446,8 @@ fn resolved_problem_matches_expected_section() {
 
 #[test]
 fn nested_relationships_match_expected_section() {
-    let actual = problem_section(NESTED_RELATIONSHIPS).expect("nestedRelationships should parse");
-
+    let mut actual = problem_section(NESTED_RELATIONSHIPS).expect("nestedRelationships should parse");
+    take_narrative(&mut actual, "Community Acquired Pneumonia");
     let age_at_onset = EntryRelationship {
         type_code: s("SUBJ"),
         inversion_ind: s("true"),
