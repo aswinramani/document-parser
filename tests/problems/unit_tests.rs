@@ -1,7 +1,7 @@
 use clinical_document_parser::parser::problem_section;
 use clinical_document_parser::utils::clinical_sections::{ClinicalStatement, ActBody, Observation};
 use clinical_document_parser::utils::common_structs::{ValueContent, TimePoint};
-use crate::fixtures::{ACTIVE_PROBLEM, RESOLVED_PROBLEM, NESTED_RELATIONSHIPS, EFFECTIVE_TIME_FORMS, AUTHOR_WITHOUT_TEMPLATE_ID, DATE_OF_DIAGNOSIS, ACT_WITH_CHILDREN, UNKNOWN_ELEMENTS_BASELINE, UNKNOWN_ELEMENTS};
+use crate::fixtures::{ACTIVE_PROBLEM, RESOLVED_PROBLEM, NESTED_RELATIONSHIPS, EFFECTIVE_TIME_FORMS, AUTHOR_WITHOUT_TEMPLATE_ID, DATE_OF_DIAGNOSIS, ACT_WITH_CHILDREN, UNKNOWN_ELEMENTS_BASELINE, UNKNOWN_ELEMENTS, START_FORM_ELEMENTS};
 
 fn get_act_body(file: &str, index: usize) -> ActBody {
     let section = problem_section(file).unwrap();
@@ -223,3 +223,10 @@ fn unknown_elements_do_not_change_the_result() {
     assert_eq!(with_unknown, baseline);
 }
 
+#[test]
+fn start_and_end_form_equals_self_closing_form() {
+    let baseline = problem_section(NESTED_RELATIONSHIPS).expect("baseline should parse");
+    let start_form = problem_section(START_FORM_ELEMENTS)
+        .expect("start-and-end form should parse");
+    assert_eq!(start_form, baseline);
+}

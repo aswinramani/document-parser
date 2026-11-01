@@ -9,6 +9,7 @@ pub const ACT_WITH_CHILDREN: &str = "sample-documents/problems/actWithChildren.x
 /** valid but unknown no parsing **/
 pub const UNKNOWN_ELEMENTS_BASELINE: &str = "sample-documents/lenient/unknownElementsBaseline.xml";
 pub const UNKNOWN_ELEMENTS: &str = "sample-documents/lenient/unknownElements.xml";
+pub const START_FORM_ELEMENTS: &str = "sample-documents/lenient/startFormElements.xml";
 
 
 /** malformed imports **/
