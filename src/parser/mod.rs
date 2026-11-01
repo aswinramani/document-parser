@@ -540,18 +540,11 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                                 }
                         }
                         "time" => {
-                            let null_flavor = get_attr(&e, "nullFlavor");
-                            let value = get_attr(&e, "value");
-                            let time = Some(EffectiveTime{
-                                low: None,
-                                high: None,
-                                null_flavor,
-                                value,
-                            });
                             if let Some(observation) = observation_stack.last_mut()
-                                && let Some(observation_author) =  observation.author.as_mut() {
-                                    observation_author.time = time;
-                                }
+                                && let Some(observation_author) = observation.author.as_mut()
+                            {
+                                observation_author.time = Some(get_time_point(&e));
+                            }
                         }
                         _ => {}
                     }

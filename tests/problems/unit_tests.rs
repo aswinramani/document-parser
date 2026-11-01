@@ -113,8 +113,7 @@ fn high_with_value_and_null_flavor_keeps_the_value() {
 fn author_time_null_flavor_is_captured() {
     let observation = get_problem_observation(EFFECTIVE_TIME_FORMS, 7);
     let time = observation.author.unwrap().time.unwrap();
-    assert_eq!(time.null_flavor, Some("UNK".to_string()));
-    assert_eq!(time.value, None);
+    assert_eq!(time, TimePoint::NullFlavor("UNK".to_string()));
 }
 
 #[test]

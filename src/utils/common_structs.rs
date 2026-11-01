@@ -107,7 +107,7 @@ pub struct Organization {
 #[serde(rename_all = "camelCase")]
 pub struct Author {
     pub template_id: Option<BaseIdentifier>,
-    pub time: Option<EffectiveTime>,
+    pub time: Option<TimePoint>,
     pub assigned_author: Option<AssignedAuthor>,
 }
 

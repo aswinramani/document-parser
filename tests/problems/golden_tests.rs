@@ -121,12 +121,7 @@ fn active_problem_matches_expected_section() {
                             }),
                             author: Some(Author {
                                 template_id: Some(base_id("2.16.840.1.113883.10.20.22.4.119", None)),
-                                time: Some(EffectiveTime {
-                                    low: None,
-                                    high: None,
-                                    null_flavor: None,
-                                    value: s("20140302124536"),
-                                }),
+                                time: Some(TimePoint::Value("20140302124536".to_string())),
                                 assigned_author: Some(AssignedAuthor {
                                     id: Some(base_id("2.16.840.1.113883.4.6", Some("66666"))),
                                     code: Some(Code {
@@ -395,12 +390,7 @@ fn resolved_problem_matches_expected_section() {
                             }),
                             author: Some(Author {
                                 template_id: Some(base_id("2.16.840.1.113883.10.20.22.4.119", None)),
-                                time: Some(EffectiveTime {
-                                    low: None,
-                                    high: None,
-                                    null_flavor: None,
-                                    value: s("20140407"),
-                                }),
+                                time: Some(TimePoint::Value("20140407".to_string())),
                                 assigned_author: Some(AssignedAuthor {
                                     id: Some(base_id("2.16.840.1.113883.4.6", Some("66666"))),
                                     code: Some(Code {
@@ -611,12 +601,7 @@ fn nested_relationships_match_expected_section() {
                             }),
                             author: Some(Author {
                                 template_id: Some(base_id("2.16.840.1.113883.10.20.22.4.119", None)),
-                                time: Some(EffectiveTime {
-                                    low: None,
-                                    high: None,
-                                    null_flavor: None,
-                                    value: s("20140302124536"),
-                                }),
+                                time: Some(TimePoint::Value("20140302124536".to_string())),
                                 assigned_author: Some(AssignedAuthor {
                                     id: Some(base_id("2.16.840.1.113883.4.6", Some("66666"))),
                                     code: Some(Code {
@@ -789,12 +774,7 @@ fn author_without_template_id_matches_expected_section() {
                             value: None,
                             author: Some(Author {
                                 template_id: None,
-                                time: Some(EffectiveTime {
-                                    low: None,
-                                    high: None,
-                                    null_flavor: None,
-                                    value: s("20140302124536"),
-                                }),
+                                time: Some(TimePoint::Value("20140302124536".to_string())),
                                 assigned_author: Some(AssignedAuthor {
                                     id: Some(base_id("2.16.840.1.113883.4.6", Some("66666"))),
                                     code: None,
