@@ -6,6 +6,7 @@ use std::io::BufReader;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use quick_xml::events::BytesStart;
+use quick_xml::events::BytesEnd;
 use quick_xml::XmlVersion;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation, Value};
 use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference, Author, AssignedAuthor, Telecom, Address, PersonName, ValueContent, PhysicalQuantity, TimePoint};
@@ -31,6 +32,8 @@ const TEXT_ELEMENTS: [&str; 10] = [
     "title", "streetAddressLine", "city", "state", "postalCode",
     "country", "given", "family", "prefix", "suffix",
 ];
+
+const DOCUMENT_WRAPPERS: [&str; 3] = ["ClinicalDocument", "component", "structuredBody"];
 
 
 fn get_attr(e: &BytesStart, attr: &str) -> Option<String> {
@@ -97,6 +100,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
     let mut text_buf = Vec::new();
     let mut skip_buf = Vec::new();
     let mut state = ParseState::Root;
+    let mut template_ids_before_section = 0;
     let mut section = Section {
         template_ids: Vec::new(),
         code: None,
@@ -125,7 +129,23 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
             Ok(Event::Start(e)) => {
                 current_text_field = Some(e.name().as_ref().to_string());
                 match e.name().as_ref() {
-                    "section" => state = ParseState::InSection,
+                    name if state == ParseState::Root
+                        && name != "section"
+                        && !DOCUMENT_WRAPPERS.contains(&name) =>
+                    {
+                        let end = e.to_end().into_owned();
+                        if let Err(source) = xml.read_to_end_into(end.name(), &mut skip_buf) {
+                            return Err(ParseError::Xml {
+                                position: xml.error_position(),
+                                source,
+                            });
+                        }
+                    }
+                    name if state == ParseState::Root && DOCUMENT_WRAPPERS.contains(&name) => {}
+                    "section" => {
+                        state = ParseState::InSection;
+                        template_ids_before_section = section.template_ids.len();
+                    }
                     "entry" => {
                         state = ParseState::InEntry;
                         current_entry = Some(Entry {
@@ -190,7 +210,22 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
                     "code" => {
                         let code = get_code(&e);
                         match state {
-                            ParseState::InSection => section.code = Some(code),
+                            ParseState::InSection => {
+                                if code.code.as_deref() == Some("11450-4") {
+                                    section.code = Some(code);
+                                } else {
+                                    // not the Problems section: drop what we collected and skip it whole
+                                    section.template_ids.truncate(template_ids_before_section);
+                                    let end = BytesEnd::new("section");
+                                    if let Err(source) = xml.read_to_end_into(end.name(), &mut skip_buf) {
+                                        return Err(ParseError::Xml {
+                                            position: xml.error_position(),
+                                            source,
+                                        });
+                                    }
+                                    state = ParseState::Root;
+                                }
+                            }
                             ParseState::InAct => {
                                 if let Some(act) = act_stack.last_mut()
                                     && let Some(body) = &mut act.act_body {

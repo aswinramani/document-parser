@@ -1,7 +1,7 @@
 use clinical_document_parser::parser::problem_section;
 use clinical_document_parser::utils::clinical_sections::{ClinicalStatement, ActBody, Observation};
 use clinical_document_parser::utils::common_structs::{ValueContent, TimePoint};
-use crate::fixtures::{ACTIVE_PROBLEM, RESOLVED_PROBLEM, NESTED_RELATIONSHIPS, EFFECTIVE_TIME_FORMS, AUTHOR_WITHOUT_TEMPLATE_ID, DATE_OF_DIAGNOSIS, ACT_WITH_CHILDREN, UNKNOWN_ELEMENTS_BASELINE, UNKNOWN_ELEMENTS, START_FORM_ELEMENTS};
+use crate::fixtures::{ OTHER_SECTIONS_AROUND, WRAPPED_IN_CLINICAL_DOCUMENT, ACTIVE_PROBLEM, RESOLVED_PROBLEM, NESTED_RELATIONSHIPS, EFFECTIVE_TIME_FORMS, AUTHOR_WITHOUT_TEMPLATE_ID, DATE_OF_DIAGNOSIS, ACT_WITH_CHILDREN, UNKNOWN_ELEMENTS_BASELINE, UNKNOWN_ELEMENTS, START_FORM_ELEMENTS };
 
 fn get_act_body(file: &str, index: usize) -> ActBody {
     let section = problem_section(file).unwrap();
@@ -229,4 +229,20 @@ fn start_and_end_form_equals_self_closing_form() {
     let start_form = problem_section(START_FORM_ELEMENTS)
         .expect("start-and-end form should parse");
     assert_eq!(start_form, baseline);
+}
+
+#[test]
+fn problems_section_inside_a_full_document_equals_the_bare_section() {
+    let baseline = problem_section(NESTED_RELATIONSHIPS).expect("baseline should parse");
+    let wrapped = problem_section(WRAPPED_IN_CLINICAL_DOCUMENT)
+        .expect("full document should parse");
+    assert_eq!(wrapped, baseline);
+}
+
+#[test]
+fn other_sections_are_ignored() {
+    let baseline = problem_section(NESTED_RELATIONSHIPS).expect("baseline should parse");
+    let with_others = problem_section(OTHER_SECTIONS_AROUND)
+        .expect("document with other sections should parse");
+    assert_eq!(with_others, baseline);
 }

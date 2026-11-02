@@ -1,3 +1,4 @@
+
 pub const ACTIVE_PROBLEM: &str = "sample-documents/problems/activeProblem.xml";
 pub const RESOLVED_PROBLEM: &str = "sample-documents/problems/resolvedProblem.xml";
 pub const NESTED_RELATIONSHIPS: &str = "sample-documents/problems/nestedRelationships.xml";
@@ -10,7 +11,8 @@ pub const ACT_WITH_CHILDREN: &str = "sample-documents/problems/actWithChildren.x
 pub const UNKNOWN_ELEMENTS_BASELINE: &str = "sample-documents/lenient/unknownElementsBaseline.xml";
 pub const UNKNOWN_ELEMENTS: &str = "sample-documents/lenient/unknownElements.xml";
 pub const START_FORM_ELEMENTS: &str = "sample-documents/lenient/startFormElements.xml";
-
+pub const WRAPPED_IN_CLINICAL_DOCUMENT: &str = "sample-documents/lenient/wrappedInClinicalDocument.xml";
+pub const OTHER_SECTIONS_AROUND: &str = "sample-documents/lenient/otherSectionsAround.xml";
 
 /** malformed imports **/
 pub const MISSING_FILE: &str = "sample-documents/malformed/doesNotExist.xml";
