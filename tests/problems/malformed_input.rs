@@ -27,7 +27,7 @@ fn document_without_problems_section_returns_no_problems_section_error() {
     let err = problem_section(NO_PROBLEMS_SECTION)
         .expect_err("a document without a Problems section should fail");
     match err {
-        ParseError::NoProblemsSection { path } => assert_eq!(path, NO_PROBLEMS_SECTION),
+        ParseError::NoProblemsSection { path } => assert_eq!(path.as_deref(), Some(NO_PROBLEMS_SECTION)),
         other => panic!("expected ParseError::NoProblemsSection, got: {other}"),
     }
 }
@@ -37,7 +37,7 @@ fn empty_file_returns_no_problems_section_error() {
     let err = problem_section(EMPTY_FILE)
         .expect_err("an empty file should fail");
     match err {
-        ParseError::NoProblemsSection { path } => assert_eq!(path, EMPTY_FILE),
+        ParseError::NoProblemsSection { path } => assert_eq!(path.as_deref(), Some(EMPTY_FILE)),
         other => panic!("expected ParseError::NoProblemsSection, got: {other}"),
     }
 }

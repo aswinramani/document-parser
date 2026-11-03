@@ -8,3 +8,10 @@ quick-xml = { version = "0.42.0", features = ["encoding"] }
 serde = { version = "1.0.229", features = ["derive"] }
 thiserror = "2.0.21"
 ts-rs = "12.0.1"
+
+[dev-dependencies]
+criterion = "0.8.2"
+
+[[bench]]
+name = "parse"
+harness = false

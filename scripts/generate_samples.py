@@ -6,7 +6,9 @@ Usage:
     python generate_samples.py --mode test     # ~10 varied documents for parser testing
     python generate_samples.py --mode bench    # 10,000 documents for benchmarking
     python generate_samples.py --mode bench --count 1000 --output path/to/dir
-    python generate_samples.py --mode big --size-mb 50   # one 50 MB single-section document (fractions work: 0.1)
+    python generate_samples.py --mode normal --size-mb 0.1  # one ~100 KB document (normal: up to 1 MB)
+    python generate_samples.py --mode medium --size-mb 5    # one 5 MB document (medium: over 1, up to 10 MB)
+    python generate_samples.py --mode big --size-mb 50      # stress file (big: over 10 MB)
     python generate_samples.py --mode test --encrypt      # encrypt documents before writing
     python generate_samples.py --mode decrypt              # decrypt a directory of .xml.enc files
 
@@ -409,7 +411,15 @@ def generate_test_documents(output_dir, fernet=None):
     print(f"\nGenerated {len(docs)} test documents in {output_dir}")
 
 
-def generate_big_document(output_dir, size_mb):
+# tier -> (exclusive lower bound MB, inclusive upper bound MB, default MB)
+SIZE_TIERS = {
+    "normal": (0, 1, 0.1),
+    "medium": (1, 10, 5),
+    "big": (10, float("inf"), 50),
+}
+
+
+def generate_single_document(output_dir, size_mb, prefix):
     """One document with a single Problems section holding as many entries as
     needed to reach size_mb. Streamed to disk, so a 500 MB file never exists as
     a Python string. Entries are fresh random ones, not copies of one sample."""
@@ -421,7 +431,7 @@ def generate_big_document(output_dir, size_mb):
     head, tail = full.split(marker)
 
     os.makedirs(output_dir, exist_ok=True)
-    path = os.path.join(output_dir, f"big_{size_mb:g}mb.xml")
+    path = os.path.join(output_dir, f"{prefix}_{size_mb:g}mb.xml")
     target = int(size_mb * 1024 * 1024)
     entries = 0
     with open(path, "wb") as f:
@@ -492,12 +502,13 @@ def main():
     load_dotenv()
 
     parser = argparse.ArgumentParser(description="Generate sample C-CDA XML documents")
-    parser.add_argument("--mode", choices=["test", "bench", "big", "clear", "decrypt"], default="test",
+    parser.add_argument("--mode", choices=["test", "bench", "normal", "medium", "big", "clear", "decrypt"], default="test",
                         help="test: varied documents | bench: bulk for benchmarking | "
-                             "big: one large single-section document (see --size-mb) | "
+                             "normal | medium | big: one single-section document of --size-mb, "
+                             "tiers up to 1 MB / over 1 up to 10 MB / over 10 MB (stress only) | "
                              "clear: delete generated files | decrypt: decrypt .xml.enc files in place")
-    parser.add_argument("--size-mb", type=float, default=50,
-                        help="target size in MB for big mode (default: 50)")
+    parser.add_argument("--size-mb", type=float, default=None,
+                        help="target size in MB for normal/medium/big mode (default: 0.1 / 5 / 50)")
     parser.add_argument("--count", type=int, default=10000,
                         help="number of documents for bench mode (default: 10000)")
     parser.add_argument("--output", type=str, default=None,
@@ -508,7 +519,7 @@ def main():
 
     if args.output:
         output_dir = args.output
-    elif args.mode in ("test", "big", "clear", "decrypt"):
+    elif args.mode in ("test", "normal", "medium", "big", "clear", "decrypt"):
         output_dir = os.path.join(os.path.dirname(__file__), "..", "sample-documents", "generated")
     else:
         output_dir = os.path.join(os.path.dirname(__file__), "..", "benchmarks", "samples")
@@ -522,8 +533,13 @@ def main():
         generate_test_documents(output_dir, fernet)
     elif args.mode == "bench":
         generate_bench_documents(output_dir, args.count, fernet)
-    elif args.mode == "big":
-        generate_big_document(output_dir, args.size_mb)
+    elif args.mode in SIZE_TIERS:
+        low, high, default = SIZE_TIERS[args.mode]
+        size_mb = args.size_mb if args.size_mb is not None else default
+        if not (low < size_mb <= high):
+            upper = "" if high == float("inf") else f" and up to {high} MB"
+            parser.error(f"--mode {args.mode} takes a size over {low} MB{upper}, got {size_mb}")
+        generate_single_document(output_dir, size_mb, args.mode)
     elif args.mode == "decrypt":
         decrypt_documents(output_dir, fernet)
     else:

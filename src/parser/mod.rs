@@ -2,7 +2,7 @@ pub mod error;
 use error::ParseError;
 use std::path::Path;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufRead, BufReader};
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use quick_xml::events::BytesStart;
@@ -88,12 +88,19 @@ fn get_translation(e: &BytesStart) -> Translation {
 }
 
 pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
-    let file_path = Path::new(file_path_str);
-    let file = File::open(file_path).map_err(|source| ParseError::Io {
+    let file = File::open(Path::new(file_path_str)).map_err(|source| ParseError::Io {
         path: file_path_str.to_string(),
         source,
     })?;
-    let reader = BufReader::new(file);
+    problem_section_from_reader(BufReader::new(file)).map_err(|error| match error {
+        ParseError::NoProblemsSection { .. } => ParseError::NoProblemsSection {
+            path: Some(file_path_str.to_string()),
+        },
+        other => other,
+    })
+}
+
+pub fn problem_section_from_reader<R: BufRead>(reader: R) -> Result<Section, ParseError> {
     let mut xml = Reader::from_reader(reader);
     xml.config_mut().expand_empty_elements = true;
     let mut buf = Vec::new();
@@ -615,9 +622,7 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
         .and_then(|c| c.code.as_deref())
         == Some("11450-4");
     if !has_problems_code {
-        return Err(ParseError::NoProblemsSection {
-            path: file_path_str.to_string(),
-        });
+        return Err(ParseError::NoProblemsSection { path: None });
     }
     Ok(section)
 }
