@@ -6,7 +6,9 @@ Usage:
     python generate_samples.py --mode test     # ~10 varied documents for parser testing
     python generate_samples.py --mode bench    # 10,000 documents for benchmarking
     python generate_samples.py --mode bench --count 1000 --output path/to/dir
-    python generate_samples.py --mode big --size-mb 50   # one 50 MB single-section document (fractions work: 0.1)
+    python generate_samples.py --mode normal --size-mb 0.1  # one ~100 KB document (normal: up to 1 MB)
+    python generate_samples.py --mode medium --size-mb 5    # one 5 MB document (medium: over 1, up to 10 MB)
+    python generate_samples.py --mode big --size-mb 50      # stress file (big: over 10 MB)
     python generate_samples.py --mode test --encrypt      # encrypt documents before writing
     python generate_samples.py --mode decrypt              # decrypt a directory of .xml.enc files
 
@@ -111,10 +113,26 @@ def rand_doc_code():
     return random.choice(LOINC_DOCUMENT_CODES)
 
 def problem_entry(status="active"):
+    """One Problem Concern Act entry shaped like a real C-CDA problem: author with
+    assigned person and address, a translation on the problem code, narrative
+    reference, and the Age and Problem Status nested entryRelationships."""
     code, display, code_system, code_system_name = rand_problem()
     onset = rand_recent_date()
-    status_code = "active" if status == "active" else "completed"
-    concern_status = "active" if status == "active" else "completed"
+    active = status == "active"
+    status_code = "active" if active else "completed"
+    concern_status = "active" if active else "completed"
+    ref = random.randint(1, 10**9)
+    given, family = random.choice(GIVEN_NAMES), random.choice(FAMILY_NAMES)
+    npi = random.randint(10**9, 10**10 - 1)
+    street = f"{random.randint(1, 9999)} {random.choice(FAMILY_NAMES)} St."
+    age = random.randint(1, 95)
+    high = "" if active else f'<high value="{rand_recent_date()}"/>'
+    status_value = (
+        '<value xsi:type="CD" code="55561003" codeSystem="2.16.840.1.113883.6.96" '
+        'codeSystemName="SNOMED CT" displayName="Active"/>' if active else
+        '<value xsi:type="CD" code="413322009" codeSystem="2.16.840.1.113883.6.96" '
+        'codeSystemName="SNOMED CT" displayName="Resolved"/>'
+    )
 
     return f"""<entry>
                     <act classCode="ACT" moodCode="EVN">
@@ -125,6 +143,7 @@ def problem_entry(status="active"):
                         <statusCode code="{concern_status}"/>
                         <effectiveTime>
                             <low value="{onset}"/>
+                            {high}
                         </effectiveTime>
                         <entryRelationship typeCode="SUBJ">
                             <observation classCode="OBS" moodCode="EVN">
@@ -132,7 +151,13 @@ def problem_entry(status="active"):
                                 <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
                                 <id root="{rand_uid()}"/>
                                 <code code="55607006" displayName="Problem"
-                                    codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT"/>
+                                    codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT">
+                                    <translation code="75326-9" codeSystem="2.16.840.1.113883.6.1"
+                                        codeSystemName="LOINC" displayName="Problem"/>
+                                </code>
+                                <text>
+                                    <reference value="#Problem{ref}"/>
+                                </text>
                                 <statusCode code="{status_code}"/>
                                 <effectiveTime>
                                     <low value="{onset}"/>
@@ -141,6 +166,48 @@ def problem_entry(status="active"):
                                     codeSystem="{code_system}"
                                     codeSystemName="{code_system_name}"
                                     displayName="{display}"/>
+                                <author>
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.119"/>
+                                    <time value="{onset}"/>
+                                    <assignedAuthor>
+                                        <id extension="{npi}" root="2.16.840.1.113883.4.6"/>
+                                        <code code="207RC0000X" codeSystem="2.16.840.1.113883.6.101"
+                                            codeSystemName="NUCC" displayName="Allopathic &amp; Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"/>
+                                        <addr>
+                                            <streetAddressLine>{street}</streetAddressLine>
+                                            <city>Silver Spring</city>
+                                            <state>MD</state>
+                                            <postalCode>20901</postalCode>
+                                            <country>US</country>
+                                        </addr>
+                                        <telecom value="tel:+1(301)666-6666" use="WP"/>
+                                        <assignedPerson>
+                                            <name>
+                                                <given>{given}</given>
+                                                <family>{family}</family>
+                                                <suffix>MD</suffix>
+                                            </name>
+                                        </assignedPerson>
+                                    </assignedAuthor>
+                                </author>
+                                <entryRelationship typeCode="SUBJ" inversionInd="true">
+                                    <observation classCode="OBS" moodCode="EVN">
+                                        <templateId root="2.16.840.1.113883.10.20.22.4.31"/>
+                                        <code code="445518008" codeSystem="2.16.840.1.113883.6.96"
+                                            displayName="Age At Onset"/>
+                                        <statusCode code="completed"/>
+                                        <value xsi:type="PQ" value="{age}" unit="a"/>
+                                    </observation>
+                                </entryRelationship>
+                                <entryRelationship typeCode="REFR">
+                                    <observation classCode="OBS" moodCode="EVN">
+                                        <templateId root="2.16.840.1.113883.10.20.22.4.6" extension="2019-06-20"/>
+                                        <code code="33999-4" codeSystem="2.16.840.1.113883.6.1"
+                                            displayName="Diagnosis status"/>
+                                        <statusCode code="completed"/>
+                                        {status_value}
+                                    </observation>
+                                </entryRelationship>
                             </observation>
                         </entryRelationship>
                     </act>
@@ -409,7 +476,15 @@ def generate_test_documents(output_dir, fernet=None):
     print(f"\nGenerated {len(docs)} test documents in {output_dir}")
 
 
-def generate_big_document(output_dir, size_mb):
+# tier -> (exclusive lower bound MB, inclusive upper bound MB, default MB)
+SIZE_TIERS = {
+    "normal": (0, 1, 0.1),
+    "medium": (1, 10, 5),
+    "big": (10, float("inf"), 50),
+}
+
+
+def generate_single_document(output_dir, size_mb, prefix):
     """One document with a single Problems section holding as many entries as
     needed to reach size_mb. Streamed to disk, so a 500 MB file never exists as
     a Python string. Entries are fresh random ones, not copies of one sample."""
@@ -421,7 +496,7 @@ def generate_big_document(output_dir, size_mb):
     head, tail = full.split(marker)
 
     os.makedirs(output_dir, exist_ok=True)
-    path = os.path.join(output_dir, f"big_{size_mb:g}mb.xml")
+    path = os.path.join(output_dir, f"{prefix}_{size_mb:g}mb.xml")
     target = int(size_mb * 1024 * 1024)
     entries = 0
     with open(path, "wb") as f:
@@ -492,12 +567,13 @@ def main():
     load_dotenv()
 
     parser = argparse.ArgumentParser(description="Generate sample C-CDA XML documents")
-    parser.add_argument("--mode", choices=["test", "bench", "big", "clear", "decrypt"], default="test",
+    parser.add_argument("--mode", choices=["test", "bench", "normal", "medium", "big", "clear", "decrypt"], default="test",
                         help="test: varied documents | bench: bulk for benchmarking | "
-                             "big: one large single-section document (see --size-mb) | "
+                             "normal | medium | big: one single-section document of --size-mb, "
+                             "tiers up to 1 MB / over 1 up to 10 MB / over 10 MB (stress only) | "
                              "clear: delete generated files | decrypt: decrypt .xml.enc files in place")
-    parser.add_argument("--size-mb", type=float, default=50,
-                        help="target size in MB for big mode (default: 50)")
+    parser.add_argument("--size-mb", type=float, default=None,
+                        help="target size in MB for normal/medium/big mode (default: 0.1 / 5 / 50)")
     parser.add_argument("--count", type=int, default=10000,
                         help="number of documents for bench mode (default: 10000)")
     parser.add_argument("--output", type=str, default=None,
@@ -508,7 +584,7 @@ def main():
 
     if args.output:
         output_dir = args.output
-    elif args.mode in ("test", "big", "clear", "decrypt"):
+    elif args.mode in ("test", "normal", "medium", "big", "clear", "decrypt"):
         output_dir = os.path.join(os.path.dirname(__file__), "..", "sample-documents", "generated")
     else:
         output_dir = os.path.join(os.path.dirname(__file__), "..", "benchmarks", "samples")
@@ -522,8 +598,13 @@ def main():
         generate_test_documents(output_dir, fernet)
     elif args.mode == "bench":
         generate_bench_documents(output_dir, args.count, fernet)
-    elif args.mode == "big":
-        generate_big_document(output_dir, args.size_mb)
+    elif args.mode in SIZE_TIERS:
+        low, high, default = SIZE_TIERS[args.mode]
+        size_mb = args.size_mb if args.size_mb is not None else default
+        if not (low < size_mb <= high):
+            upper = "" if high == float("inf") else f" and up to {high} MB"
+            parser.error(f"--mode {args.mode} takes a size over {low} MB{upper}, got {size_mb}")
+        generate_single_document(output_dir, size_mb, args.mode)
     elif args.mode == "decrypt":
         decrypt_documents(output_dir, fernet)
     else:

@@ -1,4 +1,4 @@
-use clinical_document_parser::parser::problem_section;
+use clinical_document_parser::parser::{problem_section, problem_section_from_reader};
 use clinical_document_parser::utils::clinical_sections::{ClinicalStatement, ActBody, Observation};
 use clinical_document_parser::utils::common_structs::{ValueContent, TimePoint};
 use crate::fixtures::{ OTHER_SECTIONS_AROUND, WRAPPED_IN_CLINICAL_DOCUMENT, ACTIVE_PROBLEM, RESOLVED_PROBLEM, NESTED_RELATIONSHIPS, EFFECTIVE_TIME_FORMS, AUTHOR_WITHOUT_TEMPLATE_ID, DATE_OF_DIAGNOSIS, ACT_WITH_CHILDREN, UNKNOWN_ELEMENTS_BASELINE, UNKNOWN_ELEMENTS, START_FORM_ELEMENTS };
@@ -246,3 +246,13 @@ fn other_sections_are_ignored() {
         .expect("document with other sections should parse");
     assert_eq!(with_others, baseline);
 }
+
+#[test]
+fn parsing_from_memory_equals_parsing_from_a_path() {
+    let from_path = problem_section(NESTED_RELATIONSHIPS).expect("path should parse");
+    let bytes = std::fs::read(NESTED_RELATIONSHIPS).expect("read fixture");
+    let from_memory = problem_section_from_reader(bytes.as_slice())
+        .expect("bytes should parse");
+    assert_eq!(from_memory, from_path);
+}
+
