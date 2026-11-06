@@ -113,10 +113,26 @@ def rand_doc_code():
     return random.choice(LOINC_DOCUMENT_CODES)
 
 def problem_entry(status="active"):
+    """One Problem Concern Act entry shaped like a real C-CDA problem: author with
+    assigned person and address, a translation on the problem code, narrative
+    reference, and the Age and Problem Status nested entryRelationships."""
     code, display, code_system, code_system_name = rand_problem()
     onset = rand_recent_date()
-    status_code = "active" if status == "active" else "completed"
-    concern_status = "active" if status == "active" else "completed"
+    active = status == "active"
+    status_code = "active" if active else "completed"
+    concern_status = "active" if active else "completed"
+    ref = random.randint(1, 10**9)
+    given, family = random.choice(GIVEN_NAMES), random.choice(FAMILY_NAMES)
+    npi = random.randint(10**9, 10**10 - 1)
+    street = f"{random.randint(1, 9999)} {random.choice(FAMILY_NAMES)} St."
+    age = random.randint(1, 95)
+    high = "" if active else f'<high value="{rand_recent_date()}"/>'
+    status_value = (
+        '<value xsi:type="CD" code="55561003" codeSystem="2.16.840.1.113883.6.96" '
+        'codeSystemName="SNOMED CT" displayName="Active"/>' if active else
+        '<value xsi:type="CD" code="413322009" codeSystem="2.16.840.1.113883.6.96" '
+        'codeSystemName="SNOMED CT" displayName="Resolved"/>'
+    )
 
     return f"""<entry>
                     <act classCode="ACT" moodCode="EVN">
@@ -127,6 +143,7 @@ def problem_entry(status="active"):
                         <statusCode code="{concern_status}"/>
                         <effectiveTime>
                             <low value="{onset}"/>
+                            {high}
                         </effectiveTime>
                         <entryRelationship typeCode="SUBJ">
                             <observation classCode="OBS" moodCode="EVN">
@@ -134,7 +151,13 @@ def problem_entry(status="active"):
                                 <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
                                 <id root="{rand_uid()}"/>
                                 <code code="55607006" displayName="Problem"
-                                    codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT"/>
+                                    codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT">
+                                    <translation code="75326-9" codeSystem="2.16.840.1.113883.6.1"
+                                        codeSystemName="LOINC" displayName="Problem"/>
+                                </code>
+                                <text>
+                                    <reference value="#Problem{ref}"/>
+                                </text>
                                 <statusCode code="{status_code}"/>
                                 <effectiveTime>
                                     <low value="{onset}"/>
@@ -143,6 +166,48 @@ def problem_entry(status="active"):
                                     codeSystem="{code_system}"
                                     codeSystemName="{code_system_name}"
                                     displayName="{display}"/>
+                                <author>
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.119"/>
+                                    <time value="{onset}"/>
+                                    <assignedAuthor>
+                                        <id extension="{npi}" root="2.16.840.1.113883.4.6"/>
+                                        <code code="207RC0000X" codeSystem="2.16.840.1.113883.6.101"
+                                            codeSystemName="NUCC" displayName="Allopathic &amp; Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"/>
+                                        <addr>
+                                            <streetAddressLine>{street}</streetAddressLine>
+                                            <city>Silver Spring</city>
+                                            <state>MD</state>
+                                            <postalCode>20901</postalCode>
+                                            <country>US</country>
+                                        </addr>
+                                        <telecom value="tel:+1(301)666-6666" use="WP"/>
+                                        <assignedPerson>
+                                            <name>
+                                                <given>{given}</given>
+                                                <family>{family}</family>
+                                                <suffix>MD</suffix>
+                                            </name>
+                                        </assignedPerson>
+                                    </assignedAuthor>
+                                </author>
+                                <entryRelationship typeCode="SUBJ" inversionInd="true">
+                                    <observation classCode="OBS" moodCode="EVN">
+                                        <templateId root="2.16.840.1.113883.10.20.22.4.31"/>
+                                        <code code="445518008" codeSystem="2.16.840.1.113883.6.96"
+                                            displayName="Age At Onset"/>
+                                        <statusCode code="completed"/>
+                                        <value xsi:type="PQ" value="{age}" unit="a"/>
+                                    </observation>
+                                </entryRelationship>
+                                <entryRelationship typeCode="REFR">
+                                    <observation classCode="OBS" moodCode="EVN">
+                                        <templateId root="2.16.840.1.113883.10.20.22.4.6" extension="2019-06-20"/>
+                                        <code code="33999-4" codeSystem="2.16.840.1.113883.6.1"
+                                            displayName="Diagnosis status"/>
+                                        <statusCode code="completed"/>
+                                        {status_value}
+                                    </observation>
+                                </entryRelationship>
                             </observation>
                         </entryRelationship>
                     </act>

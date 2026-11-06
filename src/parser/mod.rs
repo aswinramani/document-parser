@@ -8,6 +8,7 @@ use quick_xml::events::Event;
 use quick_xml::events::BytesStart;
 use quick_xml::events::BytesEnd;
 use quick_xml::XmlVersion;
+use quick_xml::events::attributes::Attribute;
 use crate::utils::clinical_sections::{Section, Entry,ClinicalStatement, EntryAct, ActBody, EntryRelationship, Observation, Value};
 use crate::utils::common_structs::{BaseIdentifier, Code, EffectiveTime, Translation, Reference, Author, AssignedAuthor, Telecom, Address, PersonName, ValueContent, PhysicalQuantity, TimePoint};
  
@@ -44,47 +45,107 @@ fn get_attr(e: &BytesStart, attr: &str) -> Option<String> {
         .map(|v| v.into_owned())
 }
 
+fn attr_value(attr: &Attribute) -> Option<String> {
+    attr.normalized_value(XmlVersion::Implicit1_0)
+        .ok()
+        .map(|v| v.into_owned())
+}
+
+
 fn get_time_point(e: &BytesStart) -> TimePoint {
-    if let Some(value) = get_attr(e, "value") {
-        TimePoint::Value(value)
-    } else if let Some(null_flavor) = get_attr(e, "nullFlavor") {
-        TimePoint::NullFlavor(null_flavor)
-    } else {
-        TimePoint::Unspecified
+    let mut value = None;
+    let mut null_flavor = None;
+    for attr in e.attributes().with_checks(false).flatten() {
+        let slot = match attr.key.as_ref() {
+            "value" => &mut value,
+            "nullFlavor" => &mut null_flavor,
+            _ => continue,
+        };
+        if slot.is_none() {
+            *slot = attr_value(&attr);
+        }
+    }
+    match (value, null_flavor) {
+        (Some(v), _) => TimePoint::Value(v),
+        (None, Some(nf)) => TimePoint::NullFlavor(nf),
+        (None, None) => TimePoint::Unspecified,
     }
 }
 
 fn get_code(e: &BytesStart) -> Code {
-    Code {
-        code: get_attr(e, "code"),
-        code_system: get_attr(e, "codeSystem"),
-        display_name: get_attr(e, "displayName"),
-        code_system_name: get_attr(e, "codeSystemName"),
-        null_flavor: get_attr(e, "nullFlavor"),
+    let mut code = Code {
+        code: None,
+        code_system: None,
+        display_name: None,
+        code_system_name: None,
+        null_flavor: None,
         translations: Vec::new(),
-        xsi_type: get_attr(e, "xsi:type"),
+        xsi_type: None,
+    };
+    for attr in e.attributes().with_checks(false).flatten() {
+        let slot = match attr.key.as_ref() {
+            "code" => &mut code.code,
+            "codeSystem" => &mut code.code_system,
+            "displayName" => &mut code.display_name,
+            "codeSystemName" => &mut code.code_system_name,
+            "nullFlavor" => &mut code.null_flavor,
+            "xsi:type" => &mut code.xsi_type,
+            _ => continue,
+        };
+        if slot.is_none() {
+            *slot = attr
+                .normalized_value(XmlVersion::Implicit1_0)
+                .ok()
+                .map(|v| v.into_owned());
+        }
     }
+    code
 }
 
-
 fn get_effective_time(e: &BytesStart) -> EffectiveTime {
-    EffectiveTime {
-        null_flavor: get_attr(e, "nullFlavor"),
-        value: get_attr(e, "value"),
+    let mut effective_time = EffectiveTime {
+        null_flavor: None,
+        value: None,
         low: None,
         high: None,
+    };
+    for attr in e.attributes().with_checks(false).flatten() {
+        let slot = match attr.key.as_ref() {
+            "nullFlavor" => &mut effective_time.null_flavor,
+            "value" => &mut effective_time.value,
+            _ => continue,
+        };
+        if slot.is_none() {
+            *slot = attr_value(&attr);
+        }
     }
+    effective_time
 }
 
 fn get_translation(e: &BytesStart) -> Translation {
-    Translation {
-        code: get_attr(e, "code"),
-        code_system: get_attr(e, "codeSystem"),
-        display_name: get_attr(e, "displayName"),
-        code_system_name: get_attr(e, "codeSystemName"),
-        null_flavor: get_attr(e, "nullFlavor"),
-        xsi_type: get_attr(e, "xsi:type"),
+    let mut translation = Translation {
+        code: None,
+        code_system: None,
+        display_name: None,
+        code_system_name: None,
+        null_flavor: None,
+        xsi_type: None,
+    };
+    for attr in e.attributes().with_checks(false).flatten() {
+        let slot = match attr.key.as_ref() {
+            "code" => &mut translation.code,
+            "codeSystem" => &mut translation.code_system,
+            "displayName" => &mut translation.display_name,
+            "codeSystemName" => &mut translation.code_system_name,
+            "nullFlavor" => &mut translation.null_flavor,
+            "xsi:type" => &mut translation.xsi_type,
+            _ => continue,
+        };
+        if slot.is_none() {
+            *slot = attr_value(&attr);
+        }
     }
+    translation
 }
 
 pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
