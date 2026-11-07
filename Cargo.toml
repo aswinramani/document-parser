@@ -7,11 +7,13 @@ edition = "2024"
 quick-xml = { version = "0.42.0", features = ["encoding"] }
 serde = { version = "1.0.229", features = ["derive"] }
 thiserror = "2.0.21"
+tracing = "0.1.44"
 ts-rs = "12.0.1"
 
 [dev-dependencies]
 criterion = "0.8.2"
 hdrhistogram = "7.6.0"
+tracing-subscriber = "0.3.23"
 
 [[bench]]
 name = "parse"
