@@ -1,4 +1,4 @@
-use clinical_document_parser::parser::{problem_section, problem_section_from_reader};
+use clinical_document_parser::parser::{problem_section, problem_section_from_reader, problem_section_with_stats_from_reader};
 use clinical_document_parser::utils::clinical_sections::{ClinicalStatement, ActBody, Observation};
 use clinical_document_parser::utils::common_structs::{ValueContent, TimePoint};
 use crate::fixtures::{ OTHER_SECTIONS_AROUND, WRAPPED_IN_CLINICAL_DOCUMENT, ACTIVE_PROBLEM, RESOLVED_PROBLEM, NESTED_RELATIONSHIPS, EFFECTIVE_TIME_FORMS, AUTHOR_WITHOUT_TEMPLATE_ID, DATE_OF_DIAGNOSIS, ACT_WITH_CHILDREN, UNKNOWN_ELEMENTS_BASELINE, UNKNOWN_ELEMENTS, START_FORM_ELEMENTS };
@@ -256,3 +256,12 @@ fn parsing_from_memory_equals_parsing_from_a_path() {
     assert_eq!(from_memory, from_path);
 }
 
+#[test]
+fn stats_count_entries_observations_and_bytes() {
+    let xml = std::fs::read(NESTED_RELATIONSHIPS).unwrap();
+    let (section, stats) = problem_section_with_stats_from_reader(xml.as_slice()).unwrap();
+    assert_eq!(stats.entries, 1);
+    assert_eq!(stats.entries, section.entries.len());
+    assert_eq!(stats.observations, 3);
+    assert_eq!(stats.bytes_read, xml.len() as u64);
+}

@@ -29,6 +29,14 @@ enum ParseState {
     InAssignedPerson,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ParseStats {
+    pub entries: usize,
+    pub observations: usize,
+    pub bytes_read: u64,
+}
+
+
 const TEXT_ELEMENTS: [&str; 10] = [
     "title", "streetAddressLine", "city", "state", "postalCode",
     "country", "given", "family", "prefix", "suffix",
@@ -162,6 +170,11 @@ pub fn problem_section(file_path_str: &str) -> Result<Section, ParseError> {
 }
 
 pub fn problem_section_from_reader<R: BufRead>(reader: R) -> Result<Section, ParseError> {
+    problem_section_with_stats_from_reader(reader).map(|(section, _)| section)
+}
+
+pub fn problem_section_with_stats_from_reader<R: BufRead>(reader: R) -> Result<(Section, ParseStats), ParseError> {
+    let _span = tracing::debug_span!("problem_section").entered();
     let mut xml = Reader::from_reader(reader);
     xml.config_mut().expand_empty_elements = true;
     let mut buf = Vec::new();
@@ -182,6 +195,7 @@ pub fn problem_section_from_reader<R: BufRead>(reader: R) -> Result<Section, Par
     let mut entry_relationship_stack: Vec<EntryRelationship> = Vec::new();
     let mut entry_relationship_owners: Vec<bool> = Vec::new();
     let mut observation_stack: Vec<Observation> = Vec::new();
+    let mut observations = 0;
     let mut effective_time_in_observation = false;
     let mut current_text_field: Option<String> = None;
     let mut current_address: Option<Address> = None;
@@ -260,6 +274,7 @@ pub fn problem_section_from_reader<R: BufRead>(reader: R) -> Result<Section, Par
                             state = ParseState::InObservation;
                             let class_code = get_attr(&e, "classCode");
                             let mood_code = get_attr(&e, "moodCode");
+                            observations += 1;
                             observation_stack.push(Observation {
                                 class_code,
                                 mood_code,
@@ -685,5 +700,16 @@ pub fn problem_section_from_reader<R: BufRead>(reader: R) -> Result<Section, Par
     if !has_problems_code {
         return Err(ParseError::NoProblemsSection { path: None });
     }
-    Ok(section)
+    let stats = ParseStats {
+        entries: section.entries.len(),
+        observations,
+        bytes_read: xml.buffer_position(),
+    };
+    tracing::debug!(
+        entries = stats.entries,
+        observations = stats.observations,
+        bytes_read = stats.bytes_read,
+        "parsed problems section"
+    );
+    Ok((section, stats))
 }
