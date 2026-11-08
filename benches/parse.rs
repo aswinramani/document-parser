@@ -2,10 +2,13 @@ use clinical_document_parser::parser::{problem_section, problem_section_from_rea
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use std::fs;
 
-const FILES: [(&str, &str); 3] = [
+const FILES: [(&str, &str); 6] = [
     ("normal_100kb", "sample-documents/generated/normal_0.1mb.xml"),
     ("normal_1mb", "sample-documents/generated/normal_1mb.xml"),
     ("medium_5mb", "sample-documents/generated/medium_5mb.xml"),
+    ("medium_10mb", "sample-documents/generated/medium_10mb.xml"),
+    ("big_25mb", "sample-documents/generated/big_25mb.xml"),
+    ("big_50mb", "sample-documents/generated/big_50mb.xml"),
 ];
 
 fn parse_sizes(c: &mut Criterion) {
