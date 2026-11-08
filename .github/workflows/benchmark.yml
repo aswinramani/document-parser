@@ -1,0 +1,50 @@
+name: Benchmark
+
+# Runs Criterion on every merge to main and stores the history on the gh-pages
+# branch (a chart plus the raw numbers). Nothing is committed to main, so branch
+# protection is not affected.
+#
+# Numbers come from a shared GitHub runner and drift by 10 to 30 percent between
+# runs: use them for trends and big regressions, not for small differences. The
+# README table from a fixed local machine stays the reference.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: Generate benchmark inputs
+        run: |
+          uv venv
+          uv pip install --python .venv/bin/python -r scripts/requirements.txt
+          .venv/bin/python scripts/generate_samples.py --mode normal --size-mb 0.1
+          .venv/bin/python scripts/generate_samples.py --mode normal --size-mb 1
+          .venv/bin/python scripts/generate_samples.py --mode medium --size-mb 5
+          .venv/bin/python scripts/generate_samples.py --mode medium --size-mb 10
+          .venv/bin/python scripts/generate_samples.py --mode big --size-mb 25
+          .venv/bin/python scripts/generate_samples.py --mode big --size-mb 50
+          ls -l sample-documents/generated
+      - name: Run Criterion
+        run: cargo bench --bench parse -- --output-format bencher | tee bench-output.txt
+      - name: Store results and update the chart
+        uses: benchmark-action/github-action-benchmark@v1.22.2
+        with:
+          name: Parse benchmarks (ubuntu-latest runner)
+          tool: cargo
+          output-file-path: bench-output.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          summary-always: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
