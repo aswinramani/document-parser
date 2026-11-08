@@ -36,6 +36,14 @@ jobs:
           ls -l sample-documents/generated
       - name: Run Criterion
         run: cargo bench --bench parse -- --output-format bencher | tee bench-output.txt
+      - name: Create gh-pages branch if it does not exist
+        run: |
+          if ! git ls-remote --exit-code --heads origin gh-pages > /dev/null; then
+            empty_tree=$(git hash-object -t tree -w /dev/null)
+            commit=$(git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com \
+              commit-tree "$empty_tree" -m "Initialize gh-pages")
+            git push origin "$commit:refs/heads/gh-pages"
+          fi
       - name: Store results and update the chart
         uses: benchmark-action/github-action-benchmark@v1.22.2
         with:
