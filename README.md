@@ -35,7 +35,7 @@ cargo clippy
 
 All published numbers come from a GitHub Linux runner (`ubuntu-latest`), produced by `benchmark.yml` on every merge to `main`. Shared runners drift by 10 to 30 percent between runs, so read the results as a trend and as a check for large regressions, not as exact figures.
 
-**Available now:** Criterion parse benchmarks (100 KB, 1 MB, 5 MB, 10 MB, 25 MB and 50 MB documents, parsed from memory and from a path), with history and a trend chart on the `gh-pages` branch.
+**Available now:** Criterion parse benchmarks (100 KB, 1 MB, 5 MB, 10 MB, 25 MB and 50 MB documents, parsed from memory and from a path), with a trend chart updated on every merge to `main`: [aswinramani.github.io/document-parser/dev/bench](https://aswinramani.github.io/document-parser/dev/bench/).
 
 **Coming once the CI jobs exist** (not published yet, to avoid quoting numbers from a different machine):
 - steady load at 200 documents/s (errors, latency percentiles, memory, CPU)
