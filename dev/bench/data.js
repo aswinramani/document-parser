@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1794231766103,
+  "lastUpdate": 1795800648366,
   "repoUrl": "https://github.com/aswinramani/document-parser",
   "entries": {
     "Parse benchmarks (ubuntu-latest runner)": [
@@ -191,6 +191,102 @@ window.BENCHMARK_DATA = {
             "name": "parse/big_50mb/memory",
             "value": 165640865,
             "range": "± 3131301",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "aswinramani5@gmail.com",
+            "name": "Aswin Ramani",
+            "username": "aswinramani"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f019cad002ba2a2ce4cbf7159ee77d9c4108b240",
+          "message": "add agent rules (#51)\n\n* day36: add AGENTS.md and CLAUDE.md agent rules\n\n* day36: add expected FHIR Condition fixture and serde_json dev-dependency",
+          "timestamp": "2026-11-27T22:57:15+05:30",
+          "tree_id": "bbd64c3c79be33cebfdff623324302da7f1e4f82",
+          "url": "https://github.com/aswinramani/document-parser/commit/f019cad002ba2a2ce4cbf7159ee77d9c4108b240"
+        },
+        "date": 1795800648101,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "parse/normal_100kb/path",
+            "value": 299364,
+            "range": "± 1979",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_100kb/memory",
+            "value": 298293,
+            "range": "± 1117",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_1mb/path",
+            "value": 2956180,
+            "range": "± 103299",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_1mb/memory",
+            "value": 2788693,
+            "range": "± 15365",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_5mb/path",
+            "value": 14703549,
+            "range": "± 76565",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_5mb/memory",
+            "value": 13767083,
+            "range": "± 63763",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_10mb/path",
+            "value": 30108754,
+            "range": "± 336579",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_10mb/memory",
+            "value": 28407013,
+            "range": "± 670628",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_25mb/path",
+            "value": 81207701,
+            "range": "± 408467",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_25mb/memory",
+            "value": 81191302,
+            "range": "± 841912",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_50mb/path",
+            "value": 163618371,
+            "range": "± 747472",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_50mb/memory",
+            "value": 164008097,
+            "range": "± 1463455",
             "unit": "ns/iter"
           }
         ]
