@@ -9,9 +9,10 @@ A streaming Rust parser for the Problems section (LOINC 11450-4) of C-CDA docume
 ## Commands
 
 ```
-cargo build
-cargo test                      # unit tests in src/, integration tests in tests/problems/
-cargo clippy --all-targets      # must stay clean
+cargo build --workspace
+cargo test --workspace          # unit tests in src/, integration tests in tests/problems/
+cargo clippy --workspace --all-targets   # must stay clean
+cargo build -p clinical-document-mcp     # builds the MCP server binary that .mcp.json points to
 cargo bench --bench parse       # needs generated inputs, see below
 cargo run --example trace       # parse one file with tracing output
 ```
@@ -24,6 +25,8 @@ Benchmark inputs are generated, not committed (`sample-documents/generated/` is 
 src/parser/          streaming parser (quick-xml)
 src/utils/           data model structs
 src/fhir/            FHIR R4 types and conversion (in progress)
+mcp-server/          separate workspace crate: exposes the parser to agents as MCP tools over stdio
+.mcp.json            registers the MCP server with Claude Code (build the binary first)
 tests/problems/      integration tests
 sample-documents/    C-CDA fixtures; fhir/ holds expected FHIR JSON
 benches/ examples/   Criterion benchmark; soak, trace and profile drivers
@@ -56,10 +59,19 @@ The repo owner writes all Rust by hand. This is how they learn the language, so 
 - Every bug fix gets a test that fails without the fix.
 - Fixtures live under `sample-documents/`. FHIR golden tests compare serialised JSON as `serde_json::Value`, not as strings.
 
+## MCP server rules (`mcp-server/`)
+
+- **stdout carries the protocol.** Never use `println!` or `print!` in the server. Log to stderr only, or a stray line corrupts the messages.
+- **The parser library stays free of async and MCP.** `tokio` and `rmcp` belong in `mcp-server/` only, never in the root crate.
+- Tool descriptions and parameter doc comments are read by the model. Write them as instructions to a new colleague.
+- Return the smallest useful output. Once the FHIR conversion exists, prefer FHIR `Condition` JSON over the raw parse tree.
+- Known gap: tool failures currently come back as ordinary text. They should become proper MCP tool errors.
+- Test a tool without an agent: `npx @modelcontextprotocol/inspector --cli ./target/debug/clinical-document-mcp --method tools/list` (use `--method tools/call --tool-name <name> --tool-arg key=value` to call one).
+
 ## Definition of done
 
-1. `cargo test` passes.
-2. `cargo clippy --all-targets` is clean.
+1. `cargo test --workspace` passes.
+2. `cargo clippy --workspace --all-targets` is clean.
 3. If the parser's hot path changed, run `cargo bench --bench parse` before and after and report the difference.
 4. README or docs updated if behaviour or commands changed.
 
