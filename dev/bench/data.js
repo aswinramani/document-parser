@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795800648366,
+  "lastUpdate": 1795801001733,
   "repoUrl": "https://github.com/aswinramani/document-parser",
   "entries": {
     "Parse benchmarks (ubuntu-latest runner)": [
@@ -287,6 +287,102 @@ window.BENCHMARK_DATA = {
             "name": "parse/big_50mb/memory",
             "value": 164008097,
             "range": "± 1463455",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "31f938971382387c5b485d142a1ed4902da07682",
+          "message": "build(deps): bump github/codeql-action from 4.39.1 to 4.39.3 (#48)\n\nBumps [github/codeql-action](https://github.com/github/codeql-action) from 4.39.1 to 4.39.3.\n- [Release notes](https://github.com/github/codeql-action/releases)\n- [Changelog](https://github.com/github/codeql-action/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/github/codeql-action/compare/v4.39.1...v4.39.3)\n\n---\nupdated-dependencies:\n- dependency-name: github/codeql-action\n  dependency-version: 4.39.3\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-11-27T23:03:02+05:30",
+          "tree_id": "ace120b925cb1e83595938dfe5f16888f98e40ea",
+          "url": "https://github.com/aswinramani/document-parser/commit/31f938971382387c5b485d142a1ed4902da07682"
+        },
+        "date": 1795801001379,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "parse/normal_100kb/path",
+            "value": 354289,
+            "range": "± 1676",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_100kb/memory",
+            "value": 319169,
+            "range": "± 3078",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_1mb/path",
+            "value": 3323490,
+            "range": "± 31024",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_1mb/memory",
+            "value": 3053765,
+            "range": "± 16255",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_5mb/path",
+            "value": 16963197,
+            "range": "± 294285",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_5mb/memory",
+            "value": 15523380,
+            "range": "± 210811",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_10mb/path",
+            "value": 36625685,
+            "range": "± 891949",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_10mb/memory",
+            "value": 33192470,
+            "range": "± 630486",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_25mb/path",
+            "value": 93303811,
+            "range": "± 3071051",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_25mb/memory",
+            "value": 85735954,
+            "range": "± 822807",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_50mb/path",
+            "value": 187476873,
+            "range": "± 4893609",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_50mb/memory",
+            "value": 171813758,
+            "range": "± 2699184",
             "unit": "ns/iter"
           }
         ]
