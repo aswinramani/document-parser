@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795801001733,
+  "lastUpdate": 1795803105568,
   "repoUrl": "https://github.com/aswinramani/document-parser",
   "entries": {
     "Parse benchmarks (ubuntu-latest runner)": [
@@ -383,6 +383,102 @@ window.BENCHMARK_DATA = {
             "name": "parse/big_50mb/memory",
             "value": 171813758,
             "range": "± 2699184",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "aswinramani5@gmail.com",
+            "name": "Aswin Ramani",
+            "username": "aswinramani"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1e0537b0b23c248cd0310ff03a04ec2bb2e79aef",
+          "message": "day36: init mcp-server workspace skeleton (#52)\n\n* day36: init mcp-server workspace skeleton\n\n* day36: document MCP server in AGENTS.md and register it in .mcp.json\n\n* day36: run tests and clippy across the whole workspace",
+          "timestamp": "2026-11-27T23:38:01+05:30",
+          "tree_id": "12fc8c86589ce5c7c2bd55296a3bece86a2ae2b0",
+          "url": "https://github.com/aswinramani/document-parser/commit/1e0537b0b23c248cd0310ff03a04ec2bb2e79aef"
+        },
+        "date": 1795803105155,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "parse/normal_100kb/path",
+            "value": 387724,
+            "range": "± 3230",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_100kb/memory",
+            "value": 382278,
+            "range": "± 4235",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_1mb/path",
+            "value": 3734866,
+            "range": "± 19681",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_1mb/memory",
+            "value": 3508387,
+            "range": "± 21745",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_5mb/path",
+            "value": 18689076,
+            "range": "± 389328",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_5mb/memory",
+            "value": 17604114,
+            "range": "± 115351",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_10mb/path",
+            "value": 39108664,
+            "range": "± 1613046",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_10mb/memory",
+            "value": 36636063,
+            "range": "± 654420",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_25mb/path",
+            "value": 102748138,
+            "range": "± 1201349",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_25mb/memory",
+            "value": 95054652,
+            "range": "± 2607448",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_50mb/path",
+            "value": 205561312,
+            "range": "± 3656531",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_50mb/memory",
+            "value": 190339088,
+            "range": "± 1032581",
             "unit": "ns/iter"
           }
         ]
