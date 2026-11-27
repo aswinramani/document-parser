@@ -1,0 +1,24 @@
+[
+  {
+    "resourceType": "Condition",
+    "clinicalStatus": {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          "code": "active"
+        }
+      ]
+    },
+    "code": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "385093006",
+          "display": "Community acquired pneumonia"
+        }
+      ],
+      "text": "Community acquired pneumonia"
+    },
+    "onsetDateTime": "2014-02-27"
+  }
+]
