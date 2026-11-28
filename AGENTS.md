@@ -1,5 +1,3 @@
-# AGENTS.md
-
 Rules for AI coding agents (and a quick orientation for humans) working in this repo.
 
 ## What this project is
@@ -10,7 +8,7 @@ A streaming Rust parser for the Problems section (LOINC 11450-4) of C-CDA docume
 
 ```
 cargo build --workspace
-cargo test --workspace          # unit tests in src/, integration tests in tests/problems/
+cargo test --workspace          # unit tests in src/, integration tests in tests/problems/ and tests/fhir/
 cargo clippy --workspace --all-targets   # must stay clean
 cargo build -p clinical-document-mcp     # builds the MCP server binary that .mcp.json points to
 cargo bench --bench parse       # needs generated inputs, see below
@@ -24,10 +22,11 @@ Benchmark inputs are generated, not committed (`sample-documents/generated/` is 
 ```
 src/parser/          streaming parser (quick-xml)
 src/utils/           data model structs
-src/fhir/            FHIR R4 types and conversion (in progress)
+src/fhir/            FHIR R4: types (datatypes, condition), shared mapping helpers (mapping), Problems conversion (problems, not written yet)
 mcp-server/          separate workspace crate: exposes the parser to agents as MCP tools over stdio
 .mcp.json            registers the MCP server with Claude Code (build the binary first)
-tests/problems/      integration tests
+tests/problems/      integration tests for the parser
+tests/fhir/          integration tests for the FHIR types and mapping helpers
 sample-documents/    C-CDA fixtures; fhir/ holds expected FHIR JSON
 benches/ examples/   Criterion benchmark; soak, trace and profile drivers
 scripts/             Python sample generator
@@ -58,6 +57,8 @@ The repo owner writes all Rust by hand. This is how they learn the language, so 
 - FHIR: **R4 only**. serde `rename_all = "camelCase"` and `skip_serializing_if = "Option::is_none"`. A struct means "all of these fields"; an enum means "one of these" (for example `onset[x]`).
 - Every bug fix gets a test that fails without the fix.
 - Fixtures live under `sample-documents/`. FHIR golden tests compare serialised JSON as `serde_json::Value`, not as strings.
+- Integration tests live in `tests/<area>/main.rs`, which declares one module per topic. Cargo finds the directory by itself, with no `Cargo.toml` entry. A bare file directly in a `tests/` subfolder without a `main.rs` is not run.
+- **Code-system mappings** (OID to URI, status and code maps) go into code only after being checked against a named source: the HL7 FHIR R4 pages, the C-CDA on FHIR guide, or the code system's owner. Name the source in a comment. If a pair cannot be verified, leave it out. The `urn:oid:<oid>` fallback in `oid_to_uri` is our own assumption, not a rule from the spec.
 
 ## MCP server rules (`mcp-server/`)
 
