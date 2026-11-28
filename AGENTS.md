@@ -1,5 +1,3 @@
-# AGENTS.md
-
 Rules for AI coding agents (and a quick orientation for humans) working in this repo.
 
 ## What this project is
