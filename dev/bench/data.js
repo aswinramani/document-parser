@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795803105568,
+  "lastUpdate": 1795851822669,
   "repoUrl": "https://github.com/aswinramani/document-parser",
   "entries": {
     "Parse benchmarks (ubuntu-latest runner)": [
@@ -479,6 +479,102 @@ window.BENCHMARK_DATA = {
             "name": "parse/big_50mb/memory",
             "value": 190339088,
             "range": "± 1032581",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "aswinramani5@gmail.com",
+            "name": "Aswin Ramani",
+            "username": "aswinramani"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ffee422092b1c87f083737ef01e8ed7f75a2c782",
+          "message": "day 37: Init Fhir service (#53)\n\n* day37: init fhir module\n\n* day37: add fhir data types using structs and their tests\n\n* day37: init condition struct with fixture test\n\n* day37: init oid to uri mapping and test\n\n* day37: add hl7_time_to_fhir date conversion\n\n* day37: add clinical status mapping",
+          "timestamp": "2026-11-28T13:10:43+05:30",
+          "tree_id": "e228e694442d1a5402ad67f79e6abcbc85ccfb24",
+          "url": "https://github.com/aswinramani/document-parser/commit/ffee422092b1c87f083737ef01e8ed7f75a2c782"
+        },
+        "date": 1795851822374,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "parse/normal_100kb/path",
+            "value": 228649,
+            "range": "± 10085",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_100kb/memory",
+            "value": 223178,
+            "range": "± 4052",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_1mb/path",
+            "value": 2307480,
+            "range": "± 52618",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_1mb/memory",
+            "value": 2181787,
+            "range": "± 130569",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_5mb/path",
+            "value": 12654668,
+            "range": "± 590897",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_5mb/memory",
+            "value": 10998434,
+            "range": "± 864917",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_10mb/path",
+            "value": 26744296,
+            "range": "± 2349576",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_10mb/memory",
+            "value": 24318950,
+            "range": "± 513550",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_25mb/path",
+            "value": 68462034,
+            "range": "± 1784029",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_25mb/memory",
+            "value": 61124634,
+            "range": "± 1070690",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_50mb/path",
+            "value": 133097668,
+            "range": "± 6992304",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_50mb/memory",
+            "value": 121972790,
+            "range": "± 3285600",
             "unit": "ns/iter"
           }
         ]
