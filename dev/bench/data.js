@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795851822669,
+  "lastUpdate": 1795853314304,
   "repoUrl": "https://github.com/aswinramani/document-parser",
   "entries": {
     "Parse benchmarks (ubuntu-latest runner)": [
@@ -575,6 +575,102 @@ window.BENCHMARK_DATA = {
             "name": "parse/big_50mb/memory",
             "value": 121972790,
             "range": "± 3285600",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "aswinramani5@gmail.com",
+            "name": "Aswin Ramani",
+            "username": "aswinramani"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9601f37db2ee14f5862a110c182b0e8b5ed67c61",
+          "message": "day37: update README and AGENTS.md, rename the tests workflow (#54)\n\n* day37: update README and AGENTS.md, rename the tests workflow\n\n* day37: update AGENTS.md",
+          "timestamp": "2026-11-28T13:35:19+05:30",
+          "tree_id": "9293e81a12b2859c36e971dcd51b381ac28ec5cc",
+          "url": "https://github.com/aswinramani/document-parser/commit/9601f37db2ee14f5862a110c182b0e8b5ed67c61"
+        },
+        "date": 1795853313753,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "parse/normal_100kb/path",
+            "value": 247705,
+            "range": "± 9434",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_100kb/memory",
+            "value": 240425,
+            "range": "± 3184",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_1mb/path",
+            "value": 2431952,
+            "range": "± 35982",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/normal_1mb/memory",
+            "value": 2185041,
+            "range": "± 63525",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_5mb/path",
+            "value": 12592921,
+            "range": "± 732862",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_5mb/memory",
+            "value": 11108673,
+            "range": "± 751954",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_10mb/path",
+            "value": 27670909,
+            "range": "± 2544907",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/medium_10mb/memory",
+            "value": 24942071,
+            "range": "± 2118281",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_25mb/path",
+            "value": 72615752,
+            "range": "± 3680302",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_25mb/memory",
+            "value": 65411728,
+            "range": "± 1143924",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_50mb/path",
+            "value": 143870103,
+            "range": "± 6428421",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse/big_50mb/memory",
+            "value": 129036266,
+            "range": "± 5717249",
             "unit": "ns/iter"
           }
         ]
