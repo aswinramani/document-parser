@@ -1,3 +1,5 @@
+use super::datatypes::{CodeableConcept, Coding};
+
 // OID -> FHIR system URI pairs, each checked against an official source:
 // hl7.org/fhir/R4/terminologies-systems.html, hl7.org/fhir/R4/icd.html,
 // and the BfArM terminology server (ICD-10-GM).
@@ -22,4 +24,20 @@ pub fn hl7_time_to_fhir(value: &str) -> Option<String> {
         8 => Some(format!("{}-{}-{}", &value[0..4], &value[4..6], &value[6..8])),
         _ => None,
     }
+}
+
+pub fn clinical_status_from_act_status(status_code: &str) -> Option<CodeableConcept> {
+    let code = match status_code {
+        "active" => "active",
+        "completed" | "aborted" | "suspended" => "inactive",
+        _ => return None,
+    };
+    Some(CodeableConcept {
+        coding: vec![Coding {
+            system: Some("http://terminology.hl7.org/CodeSystem/condition-clinical".to_string()),
+            code: Some(code.to_string()),
+            display: None,
+        }],
+        text: None,
+    })
 }
