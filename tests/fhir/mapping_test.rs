@@ -1,4 +1,4 @@
-use clinical_document_parser::fhir::mapping::oid_to_uri;
+use clinical_document_parser::fhir::mapping::{oid_to_uri, hl7_time_to_fhir};
 
 #[test]
 fn known_oids_map_to_their_fhir_uris() {
@@ -19,4 +19,18 @@ fn icd_10_variants_map_to_their_fhir_uris() {
         oid_to_uri("1.2.276.0.76.5.554"),
         "http://fhir.de/CodeSystem/bfarm/icd-10-gm"
     );
+}
+
+#[test]
+fn date_forms_keep_their_precision() {
+    assert_eq!(hl7_time_to_fhir("2014"), Some("2014".to_string()));
+    assert_eq!(hl7_time_to_fhir("201402"), Some("2014-02".to_string()));
+    assert_eq!(hl7_time_to_fhir("20140227"), Some("2014-02-27".to_string()));
+}
+
+#[test]
+fn unsupported_input_returns_none() {
+    assert_eq!(hl7_time_to_fhir(""), None);
+    assert_eq!(hl7_time_to_fhir("20140"), None);
+    assert_eq!(hl7_time_to_fhir("2014-02"), None);
 }
